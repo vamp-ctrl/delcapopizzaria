@@ -57,6 +57,21 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        tomato: {
+          DEFAULT: "hsl(var(--tomato))",
+          light: "hsl(var(--tomato-light))",
+        },
+        cheese: {
+          DEFAULT: "hsl(var(--cheese))",
+          light: "hsl(var(--cheese-light))",
+        },
+        olive: "hsl(var(--olive))",
+        cream: "hsl(var(--cream))",
+        wood: "hsl(var(--wood))",
+      },
+      fontFamily: {
+        display: ["Playfair Display", "serif"],
+        body: ["Inter", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
