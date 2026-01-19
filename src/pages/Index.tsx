@@ -6,6 +6,7 @@ import Menu from '@/components/Menu';
 import CartDrawer from '@/components/CartDrawer';
 import Chat from '@/components/Chat';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import InfoButton from '@/components/InfoButton';
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -23,6 +24,7 @@ const Index = () => {
         <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
         <Chat />
         <WhatsAppButton />
+        <InfoButton />
       </div>
     </CartProvider>
   );
