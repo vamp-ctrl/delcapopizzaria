@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -11,13 +13,22 @@ interface CartDrawerProps {
 
 const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
   const { items, updateQuantity, removeItem, total, clearCart } = useCart();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleCheckout = () => {
+    if (!user) {
+      toast.error('Você precisa estar logado para fazer um pedido');
+      onClose();
+      navigate('/auth');
+      return;
+    }
+
     const message = items
       .map(item => `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`)
       .join('%0A');
     
-    const whatsappUrl = `https://wa.me/5511999999999?text=Olá! Gostaria de fazer um pedido:%0A%0A${message}%0A%0ATotal: R$ ${total.toFixed(2)}`;
+    const whatsappUrl = `https://w.app/sg7lgy?text=Olá! Gostaria de fazer um pedido:%0A%0A${message}%0A%0ATotal: R$ ${total.toFixed(2)}`;
     window.open(whatsappUrl, '_blank');
     toast.success('Redirecionando para o WhatsApp...');
   };
@@ -31,7 +42,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-wood/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
           />
           <motion.div
             initial={{ x: '100%' }}
@@ -66,6 +77,11 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
                     >
                       <div className="flex-1">
                         <h4 className="font-medium text-foreground">{item.name}</h4>
+                        {item.flavors && item.flavors.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {item.flavors.join(' / ')}
+                          </p>
+                        )}
                         <p className="text-sm text-secondary font-semibold">
                           R$ {item.price.toFixed(2)}
                         </p>
@@ -107,6 +123,11 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
 
             {items.length > 0 && (
               <div className="p-4 border-t border-border space-y-4">
+                {!user && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Faça login para finalizar seu pedido
+                  </p>
+                )}
                 <div className="flex justify-between items-center text-lg">
                   <span className="font-medium">Total:</span>
                   <span className="font-bold text-primary text-2xl">R$ {total.toFixed(2)}</span>
@@ -124,7 +145,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
                     onClick={handleCheckout}
                     className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
                   >
-                    Pedir via WhatsApp
+                    {user ? 'Pedir via WhatsApp' : 'Fazer Login'}
                   </Button>
                 </div>
               </div>

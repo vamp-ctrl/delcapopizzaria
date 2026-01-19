@@ -23,4 +23,12 @@ export interface CartItem {
   size?: PizzaSize | string;
   price: number;
   quantity: number;
+  flavors?: string[]; // Added for pizza flavors
 }
+
+export const MAX_FLAVORS: Record<PizzaSize, number> = {
+  'P': 2,
+  'M': 2,
+  'G': 3,
+  'GG': 3
+};
