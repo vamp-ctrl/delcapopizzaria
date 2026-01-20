@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Minus, ShoppingCart, Search } from 'lucide-react';
+import { X, ShoppingCart, Search, Check, AlertCircle } from 'lucide-react';
 import { Pizza, PizzaSize, MAX_FLAVORS } from '@/types/menu';
 import { pizzas } from '@/data/menu';
 import { Button } from '@/components/ui/button';
@@ -12,15 +12,22 @@ interface FlavorSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   selectedSize: PizzaSize;
-  basePrice: number;
 }
 
-const FlavorSelector = ({ isOpen, onClose, selectedSize, basePrice }: FlavorSelectorProps) => {
+const SIZE_LABELS: Record<PizzaSize, string> = {
+  P: 'Pequena',
+  M: 'Média',
+  G: 'Grande',
+  GG: 'Gigante'
+};
+
+const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) => {
   const [selectedFlavors, setSelectedFlavors] = useState<Pizza[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const { addItem } = useCart();
 
   const maxFlavors = MAX_FLAVORS[selectedSize];
+  const isAtLimit = selectedFlavors.length >= maxFlavors;
   
   const filteredPizzas = pizzas.filter(pizza =>
     pizza.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,12 +40,17 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize, basePrice }: FlavorSele
     if (isSelected) {
       setSelectedFlavors(prev => prev.filter(f => f.id !== pizza.id));
     } else {
-      if (selectedFlavors.length >= maxFlavors) {
-        toast.error(`Máximo de ${maxFlavors} sabores para tamanho ${selectedSize}`);
-        return;
+      if (isAtLimit) {
+        return; // Block selection - button is already disabled
       }
       setSelectedFlavors(prev => [...prev, pizza]);
     }
+  };
+
+  const calculatePrice = () => {
+    if (selectedFlavors.length === 0) return 0;
+    const total = selectedFlavors.reduce((sum, f) => sum + f.prices[selectedSize], 0);
+    return total / selectedFlavors.length;
   };
 
   const handleAddToCart = () => {
@@ -48,18 +60,18 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize, basePrice }: FlavorSele
     }
 
     const flavorNames = selectedFlavors.map(f => f.name);
-    const avgPrice = selectedFlavors.reduce((sum, f) => sum + f.prices[selectedSize], 0) / selectedFlavors.length;
+    const price = calculatePrice();
     
     addItem({
       id: `pizza-${selectedSize}-${Date.now()}`,
       type: 'pizza',
-      name: `Pizza ${selectedSize} - ${flavorNames.join(' / ')}`,
+      name: `Pizza ${SIZE_LABELS[selectedSize]} (${selectedSize}) - ${flavorNames.join(' / ')}`,
       size: selectedSize,
-      price: avgPrice,
+      price: price,
       flavors: flavorNames
     });
 
-    toast.success(`Pizza adicionada ao carrinho!`);
+    toast.success(`Pizza ${SIZE_LABELS[selectedSize]} adicionada ao carrinho!`);
     setSelectedFlavors([]);
     setSearchTerm('');
     onClose();
@@ -80,19 +92,22 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize, basePrice }: FlavorSele
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/50 z-50"
+            className="fixed inset-0 bg-black/60 z-50"
           />
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] bg-card border-t border-border rounded-t-2xl shadow-xl overflow-hidden"
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] bg-card border-t border-border rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
           >
-            <div className="p-4 bg-primary text-primary-foreground flex items-center justify-between sticky top-0">
+            {/* Header */}
+            <div className="p-4 bg-primary text-primary-foreground flex items-center justify-between shrink-0">
               <div>
-                <h3 className="font-display font-semibold">Escolha os Sabores</h3>
+                <h3 className="font-display text-lg font-bold">
+                  Pizza {SIZE_LABELS[selectedSize]} ({selectedSize})
+                </h3>
                 <p className="text-sm opacity-90">
-                  Tamanho {selectedSize} - Até {maxFlavors} sabor{maxFlavors > 1 ? 'es' : ''}
+                  Escolha até {maxFlavors} sabor{maxFlavors > 1 ? 'es' : ''}
                 </p>
               </div>
               <Button 
@@ -101,34 +116,81 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize, basePrice }: FlavorSele
                 className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
                 onClick={handleClose}
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </Button>
             </div>
 
-            {/* Selected flavors */}
+            {/* Flavor Counter - Always visible */}
+            <div className="px-4 py-3 bg-muted border-b border-border shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-foreground">
+                    Sabores selecionados:
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: maxFlavors }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                          i < selectedFlavors.length
+                            ? 'bg-primary border-primary text-primary-foreground'
+                            : 'bg-background border-muted-foreground/30'
+                        }`}
+                      >
+                        {i < selectedFlavors.length ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{i + 1}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <span className={`text-lg font-bold ${isAtLimit ? 'text-secondary' : 'text-foreground'}`}>
+                  {selectedFlavors.length}/{maxFlavors}
+                </span>
+              </div>
+              
+              {/* Limit reached message */}
+              {isAtLimit && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-2 flex items-center gap-2 text-secondary text-sm"
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Limite de sabores atingido!</span>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Selected flavors chips */}
             {selectedFlavors.length > 0 && (
-              <div className="p-4 bg-muted border-b border-border">
-                <p className="text-sm font-medium text-foreground mb-2">
-                  Selecionados ({selectedFlavors.length}/{maxFlavors}):
-                </p>
+              <div className="px-4 py-3 border-b border-border shrink-0 bg-background">
                 <div className="flex flex-wrap gap-2">
                   {selectedFlavors.map(flavor => (
-                    <span
+                    <motion.span
                       key={flavor.id}
-                      className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-sm flex items-center gap-2"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-sm font-medium flex items-center gap-2"
                     >
                       {flavor.name}
-                      <button onClick={() => handleToggleFlavor(flavor)}>
+                      <button 
+                        onClick={() => handleToggleFlavor(flavor)}
+                        className="hover:bg-primary-foreground/20 rounded-full p-0.5"
+                      >
                         <X className="w-3 h-3" />
                       </button>
-                    </span>
+                    </motion.span>
                   ))}
                 </div>
               </div>
             )}
 
             {/* Search */}
-            <div className="p-4 border-b border-border">
+            <div className="p-4 border-b border-border shrink-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -141,30 +203,48 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize, basePrice }: FlavorSele
             </div>
 
             {/* Flavors list */}
-            <div className="overflow-y-auto max-h-[40vh] p-4">
+            <div className="overflow-y-auto flex-1 p-4">
               <div className="space-y-2">
                 {filteredPizzas.map(pizza => {
                   const isSelected = selectedFlavors.some(f => f.id === pizza.id);
+                  const isDisabled = !isSelected && isAtLimit;
+                  
                   return (
                     <motion.button
                       key={pizza.id}
-                      onClick={() => handleToggleFlavor(pizza)}
-                      whileTap={{ scale: 0.98 }}
-                      className={`w-full p-3 rounded-lg border-2 text-left transition-colors ${
+                      onClick={() => !isDisabled && handleToggleFlavor(pizza)}
+                      disabled={isDisabled}
+                      whileTap={!isDisabled ? { scale: 0.98 } : {}}
+                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                         isSelected
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50 bg-background'
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : isDisabled
+                          ? 'border-border bg-muted/50 opacity-50 cursor-not-allowed'
+                          : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-foreground">{pizza.name}</p>
-                          <p className="text-xs text-muted-foreground">{pizza.description}</p>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-semibold ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
+                            {pizza.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {pizza.description}
+                          </p>
                         </div>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'
-                        }`}>
-                          {isSelected && <span className="text-primary-foreground text-xs">✓</span>}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-secondary'}`}>
+                            R$ {pizza.prices[selectedSize].toFixed(2)}
+                          </span>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected 
+                              ? 'bg-primary border-primary' 
+                              : isDisabled 
+                              ? 'border-muted-foreground/30'
+                              : 'border-muted-foreground'
+                          }`}>
+                            {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
+                          </div>
                         </div>
                       </div>
                     </motion.button>
@@ -173,20 +253,31 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize, basePrice }: FlavorSele
               </div>
             </div>
 
-            {/* Add to cart button */}
-            <div className="p-4 border-t border-border bg-background">
+            {/* Summary and Add to cart */}
+            <div className="p-4 border-t border-border bg-background shrink-0 space-y-3">
+              {/* Order Summary */}
+              {selectedFlavors.length > 0 && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium text-foreground mb-1">Resumo do pedido:</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pizza {SIZE_LABELS[selectedSize]} ({selectedSize}) - {selectedFlavors.map(f => f.name).join(' / ')}
+                  </p>
+                </div>
+              )}
+              
               <Button
                 onClick={handleAddToCart}
                 disabled={selectedFlavors.length === 0}
-                className="w-full"
+                className="w-full h-12 text-base font-semibold"
                 size="lg"
               >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Adicionar ao Carrinho
-                {selectedFlavors.length > 0 && (
-                  <span className="ml-2">
-                    - R$ {(selectedFlavors.reduce((sum, f) => sum + f.prices[selectedSize], 0) / selectedFlavors.length).toFixed(2)}
-                  </span>
+                <ShoppingCart className="w-5 h-5 mr-2" />
+                {selectedFlavors.length === 0 ? (
+                  'Selecione os sabores'
+                ) : (
+                  <>
+                    Confirmar Pizza - R$ {calculatePrice().toFixed(2)}
+                  </>
                 )}
               </Button>
             </div>
