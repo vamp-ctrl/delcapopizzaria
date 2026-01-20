@@ -1,35 +1,27 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
-import { pizzas, drinks } from '@/data/menu';
+import { Search, Pizza } from 'lucide-react';
+import { drinks } from '@/data/menu';
 import { PizzaSize } from '@/types/menu';
-import PizzaCard from './PizzaCard';
+import SizeCard from './SizeCard';
 import DrinkCard from './DrinkCard';
-import PizzaSizeSelector from './PizzaSizeSelector';
 import FlavorSelector from './FlavorSelector';
 import { Input } from '@/components/ui/input';
 
+const PIZZA_SIZES: { key: PizzaSize; label: string }[] = [
+  { key: 'P', label: 'Pequena' },
+  { key: 'M', label: 'Média' },
+  { key: 'G', label: 'Grande' },
+  { key: 'GG', label: 'Gigante' }
+];
+
 const Menu = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [showFlavorSelector, setShowFlavorSelector] = useState(false);
   const [selectedSize, setSelectedSize] = useState<PizzaSize>('M');
 
   const refrigerantes = drinks.filter(d => d.type === 'refrigerante');
   const sucos = drinks.filter(d => d.type === 'suco');
-
-  // Calculate average prices for size selector
-  const avgPrices = {
-    P: pizzas.reduce((sum, p) => sum + p.prices.P, 0) / pizzas.length,
-    M: pizzas.reduce((sum, p) => sum + p.prices.M, 0) / pizzas.length,
-    G: pizzas.reduce((sum, p) => sum + p.prices.G, 0) / pizzas.length,
-    GG: pizzas.reduce((sum, p) => sum + p.prices.GG, 0) / pizzas.length
-  };
-
-  const filteredPizzas = pizzas.filter(pizza =>
-    pizza.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pizza.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const filteredRefrigerantes = refrigerantes.filter(drink =>
     drink.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -41,7 +33,6 @@ const Menu = () => {
 
   const handleSizeSelect = (size: PizzaSize) => {
     setSelectedSize(size);
-    setShowSizeSelector(false);
     setShowFlavorSelector(true);
   };
 
@@ -57,7 +48,7 @@ const Menu = () => {
           <h2 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-2">
             Nosso Cardápio
           </h2>
-          <p className="text-muted-foreground">Escolha sua pizza favorita</p>
+          <p className="text-muted-foreground">Escolha o tamanho da sua pizza favorita</p>
         </motion.div>
 
         {/* Search Bar */}
@@ -70,7 +61,7 @@ const Menu = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
-              placeholder="Buscar pizzas, bebidas..."
+              placeholder="Buscar bebidas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-12 text-base"
@@ -78,27 +69,24 @@ const Menu = () => {
           </div>
         </motion.div>
 
-        {/* Pizzas */}
+        {/* Pizza Sizes */}
         <div className="mb-16">
           <h3 className="font-display text-2xl font-semibold text-primary mb-6 flex items-center gap-2">
             <span className="w-8 h-1 bg-primary rounded-full"></span>
-            Pizzas
+            <Pizza className="w-6 h-6" />
+            Pizzas - Escolha o Tamanho
           </h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPizzas.map((pizza, index) => (
-              <PizzaCard 
-                key={pizza.id} 
-                pizza={pizza} 
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            {PIZZA_SIZES.map((size, index) => (
+              <SizeCard
+                key={size.key}
+                size={size.key}
+                label={size.label}
                 index={index}
-                onOrderClick={() => setShowSizeSelector(true)}
+                onSelect={() => handleSizeSelect(size.key)}
               />
             ))}
           </div>
-          {filteredPizzas.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">
-              Nenhuma pizza encontrada
-            </p>
-          )}
         </div>
 
         {/* Bebidas */}
@@ -136,20 +124,11 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* Size Selector Modal */}
-      <PizzaSizeSelector
-        isOpen={showSizeSelector}
-        onClose={() => setShowSizeSelector(false)}
-        onSelectSize={handleSizeSelect}
-        prices={avgPrices}
-      />
-
       {/* Flavor Selector Modal */}
       <FlavorSelector
         isOpen={showFlavorSelector}
         onClose={() => setShowFlavorSelector(false)}
         selectedSize={selectedSize}
-        basePrice={avgPrices[selectedSize]}
       />
     </section>
   );
