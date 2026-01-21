@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { Pizza } from 'lucide-react';
-import { PizzaSize, MAX_FLAVORS } from '@/types/menu';
-import { pizzas } from '@/data/menu';
+import { PizzaSize, MAX_FLAVORS, SIZE_PRICES } from '@/types/menu';
 
 interface SizeCardProps {
   size: PizzaSize;
@@ -11,10 +10,7 @@ interface SizeCardProps {
 }
 
 const SizeCard = ({ size, label, index, onSelect }: SizeCardProps) => {
-  // Calculate price range for this size
-  const prices = pizzas.map(p => p.prices[size]);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  const price = SIZE_PRICES[size];
   const maxFlavors = MAX_FLAVORS[size];
 
   return (
@@ -48,17 +44,14 @@ const SizeCard = ({ size, label, index, onSelect }: SizeCardProps) => {
           </span>
         </div>
 
-        {/* Price range */}
+        {/* Fixed Price */}
         <div className="space-y-1">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">A partir de</p>
           <p className="text-3xl font-bold text-secondary">
-            R$ {minPrice.toFixed(2)}
+            R$ {price.toFixed(2)}
           </p>
-          {minPrice !== maxPrice && (
-            <p className="text-xs text-muted-foreground">
-              até R$ {maxPrice.toFixed(2)}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            *Sabores especiais têm acréscimo
+          </p>
         </div>
 
         {/* CTA */}
