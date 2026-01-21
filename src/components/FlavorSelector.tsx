@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Search, Check, AlertCircle } from 'lucide-react';
-import { Pizza, PizzaSize, MAX_FLAVORS } from '@/types/menu';
+import { X, ShoppingCart, Search, Check, AlertCircle, Star } from 'lucide-react';
+import { Pizza, PizzaSize, MAX_FLAVORS, SIZE_PRICES } from '@/types/menu';
 import { pizzas } from '@/data/menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,9 +48,17 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
   };
 
   const calculatePrice = () => {
-    if (selectedFlavors.length === 0) return 0;
-    const total = selectedFlavors.reduce((sum, f) => sum + f.prices[selectedSize], 0);
-    return total / selectedFlavors.length;
+    const basePrice = SIZE_PRICES[selectedSize];
+    const premiumTotal = selectedFlavors
+      .filter(f => f.isPremium)
+      .reduce((sum, f) => sum + (f.premiumPrice || 0), 0);
+    return basePrice + premiumTotal;
+  };
+
+  const getPremiumTotal = () => {
+    return selectedFlavors
+      .filter(f => f.isPremium)
+      .reduce((sum, f) => sum + (f.premiumPrice || 0), 0);
   };
 
   const handleAddToCart = () => {
@@ -107,7 +115,7 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
                   Pizza {SIZE_LABELS[selectedSize]} ({selectedSize})
                 </h3>
                 <p className="text-sm opacity-90">
-                  Escolha até {maxFlavors} sabor{maxFlavors > 1 ? 'es' : ''}
+                  Escolha até {maxFlavors} sabor{maxFlavors > 1 ? 'es' : ''} • R$ {SIZE_PRICES[selectedSize].toFixed(2)}
                 </p>
               </div>
               <Button 
@@ -174,12 +182,18 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
-                      className="px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-sm font-medium flex items-center gap-2"
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 ${
+                        flavor.isPremium 
+                          ? 'bg-secondary text-secondary-foreground' 
+                          : 'bg-primary text-primary-foreground'
+                      }`}
                     >
+                      {flavor.isPremium && <Star className="w-3 h-3" />}
                       {flavor.name}
+                      {flavor.isPremium && <span className="text-xs">(+R${flavor.premiumPrice})</span>}
                       <button 
                         onClick={() => handleToggleFlavor(flavor)}
-                        className="hover:bg-primary-foreground/20 rounded-full p-0.5"
+                        className="hover:bg-white/20 rounded-full p-0.5"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -217,7 +231,9 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
                       whileTap={!isDisabled ? { scale: 0.98 } : {}}
                       className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
                         isSelected
-                          ? 'border-primary bg-primary/10 shadow-md'
+                          ? pizza.isPremium 
+                            ? 'border-secondary bg-secondary/10 shadow-md'
+                            : 'border-primary bg-primary/10 shadow-md'
                           : isDisabled
                           ? 'border-border bg-muted/50 opacity-50 cursor-not-allowed'
                           : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
@@ -225,25 +241,41 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className={`font-semibold ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
-                            {pizza.name}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={`font-semibold ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
+                              {pizza.name}
+                            </p>
+                            {pizza.isPremium && (
+                              <span className="px-2 py-0.5 bg-secondary/20 text-secondary text-xs font-bold rounded-full flex items-center gap-1">
+                                <Star className="w-3 h-3" />
+                                Especial
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground line-clamp-1">
                             {pizza.description}
                           </p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-secondary'}`}>
-                            R$ {pizza.prices[selectedSize].toFixed(2)}
-                          </span>
+                          {pizza.isPremium ? (
+                            <span className="text-sm font-bold text-secondary">
+                              +R$ {pizza.premiumPrice?.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              Incluso
+                            </span>
+                          )}
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                             isSelected 
-                              ? 'bg-primary border-primary' 
+                              ? pizza.isPremium 
+                                ? 'bg-secondary border-secondary' 
+                                : 'bg-primary border-primary'
                               : isDisabled 
                               ? 'border-muted-foreground/30'
                               : 'border-muted-foreground'
                           }`}>
-                            {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
+                            {isSelected && <Check className="w-4 h-4 text-white" />}
                           </div>
                         </div>
                       </div>
@@ -257,11 +289,21 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
             <div className="p-4 border-t border-border bg-background shrink-0 space-y-3">
               {/* Order Summary */}
               {selectedFlavors.length > 0 && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium text-foreground mb-1">Resumo do pedido:</p>
+                <div className="p-3 bg-muted rounded-lg space-y-2">
+                  <p className="text-sm font-medium text-foreground">Resumo do pedido:</p>
                   <p className="text-xs text-muted-foreground">
                     Pizza {SIZE_LABELS[selectedSize]} ({selectedSize}) - {selectedFlavors.map(f => f.name).join(' / ')}
                   </p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Preço base:</span>
+                    <span className="font-medium">R$ {SIZE_PRICES[selectedSize].toFixed(2)}</span>
+                  </div>
+                  {getPremiumTotal() > 0 && (
+                    <div className="flex justify-between text-sm text-secondary">
+                      <span>Sabores especiais:</span>
+                      <span className="font-medium">+R$ {getPremiumTotal().toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               )}
               

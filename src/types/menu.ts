@@ -4,7 +4,8 @@ export interface Pizza {
   id: string;
   name: string;
   description: string;
-  prices: Record<PizzaSize, number>;
+  isPremium?: boolean; // Sabores premium têm custo adicional
+  premiumPrice?: number; // Valor adicional do sabor premium
   image?: string;
 }
 
@@ -31,4 +32,12 @@ export const MAX_FLAVORS: Record<PizzaSize, number> = {
   'M': 2,
   'G': 3,
   'GG': 3
+};
+
+// Preços fixos por tamanho
+export const SIZE_PRICES: Record<PizzaSize, number> = {
+  'P': 47,
+  'M': 63,
+  'G': 78,
+  'GG': 85
 };

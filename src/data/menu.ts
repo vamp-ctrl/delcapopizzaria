@@ -4,50 +4,56 @@ export const pizzas: Pizza[] = [
   {
     id: 'margherita',
     name: 'Margherita',
-    description: 'Molho de tomate, mussarela, manjericão fresco e azeite',
-    prices: { P: 35, M: 45, G: 55, GG: 70 }
+    description: 'Molho de tomate, mussarela, manjericão fresco e azeite'
   },
   {
     id: 'calabresa',
     name: 'Calabresa',
-    description: 'Molho de tomate, mussarela, calabresa fatiada e cebola',
-    prices: { P: 38, M: 48, G: 58, GG: 75 }
+    description: 'Molho de tomate, mussarela, calabresa fatiada e cebola'
   },
   {
     id: 'frango-catupiry',
     name: 'Frango com Catupiry',
-    description: 'Molho de tomate, frango desfiado, catupiry e milho',
-    prices: { P: 40, M: 52, G: 65, GG: 82 }
+    description: 'Molho de tomate, frango desfiado, catupiry e milho'
   },
   {
     id: 'portuguesa',
     name: 'Portuguesa',
-    description: 'Molho, mussarela, presunto, ovos, cebola, ervilha e azeitonas',
-    prices: { P: 42, M: 54, G: 68, GG: 85 }
+    description: 'Molho, mussarela, presunto, ovos, cebola, ervilha e azeitonas'
   },
   {
     id: 'quatro-queijos',
     name: 'Quatro Queijos',
-    description: 'Mussarela, provolone, gorgonzola e parmesão',
-    prices: { P: 45, M: 58, G: 72, GG: 90 }
+    description: 'Mussarela, provolone, gorgonzola e parmesão'
   },
   {
     id: 'pepperoni',
     name: 'Pepperoni',
-    description: 'Molho de tomate, mussarela e pepperoni artesanal',
-    prices: { P: 45, M: 58, G: 72, GG: 90 }
+    description: 'Molho de tomate, mussarela e pepperoni artesanal'
   },
   {
     id: 'bacon',
     name: 'Bacon Especial',
-    description: 'Molho de tomate, mussarela, bacon crocante e cebola caramelizada',
-    prices: { P: 44, M: 56, G: 70, GG: 88 }
+    description: 'Molho de tomate, mussarela, bacon crocante e cebola caramelizada'
   },
   {
     id: 'vegetariana',
     name: 'Vegetariana',
-    description: 'Molho, mussarela, tomate, champignon, palmito e brócolis',
-    prices: { P: 40, M: 52, G: 65, GG: 82 }
+    description: 'Molho, mussarela, tomate, champignon, palmito e brócolis'
+  },
+  {
+    id: 'strogonoff-carne',
+    name: 'Strogonoff de Carne',
+    description: 'Molho de tomate, mussarela, strogonoff de carne e batata palha',
+    isPremium: true,
+    premiumPrice: 10
+  },
+  {
+    id: 'carne-seca',
+    name: 'Carne Seca',
+    description: 'Molho de tomate, mussarela, carne seca desfiada, cebola e catupiry',
+    isPremium: true,
+    premiumPrice: 10
   }
 ];
 
