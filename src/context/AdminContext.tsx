@@ -10,17 +10,26 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export const AdminProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAdminRole = async () => {
+      // Wait for auth to finish resolving the session/user before checking roles.
+      // Otherwise we may briefly see `user=null` and incorrectly block `/admin`.
+      if (authLoading) {
+        setLoading(true);
+        return;
+      }
+
       if (!user) {
         setIsAdmin(false);
         setLoading(false);
         return;
       }
+
+      setLoading(true);
 
       const { data, error } = await supabase
         .from('user_roles')
@@ -34,7 +43,7 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
     };
 
     checkAdminRole();
-  }, [user]);
+  }, [user, authLoading]);
 
   return (
     <AdminContext.Provider value={{ isAdmin, loading }}>
