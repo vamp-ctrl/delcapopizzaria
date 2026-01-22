@@ -1,7 +1,6 @@
 import { Pizza, Drink } from '@/types/menu';
 
-export const pizzas: Pizza[] = [
-  // SALGADAS
+export const pizzasSalgadas: Pizza[] = [
   {
     id: 'del-capo',
     name: 'Del Capo',
@@ -242,14 +241,20 @@ export const pizzas: Pizza[] = [
   {
     id: 'carne-seca',
     name: 'Carne Seca',
-    description: 'Molho de tomate, queijo mussarela, carne seca, requeijão cremoso, orégano'
+    description: 'Molho de tomate, queijo mussarela, carne seca, requeijão cremoso, orégano',
+    isPremium: true,
+    premiumPrice: 10
   },
   {
     id: 'carne-seca-banana',
     name: 'Carne seca com banana',
-    description: 'Molho de tomate, queijo mussarela, carne seca, banana, requeijão cremoso, orégano'
-  },
-  // DOCES
+    description: 'Molho de tomate, queijo mussarela, carne seca, banana, requeijão cremoso, orégano',
+    isPremium: true,
+    premiumPrice: 10
+  }
+];
+
+export const pizzasDoces: Pizza[] = [
   {
     id: 'banana-canela',
     name: 'Banana com canela',
@@ -293,6 +298,9 @@ export const pizzas: Pizza[] = [
     description: 'Queijo mussarela, ganache de chocolate, chocolate ao leite e coco ralado'
   }
 ];
+
+// Combined array for backward compatibility
+export const pizzas: Pizza[] = [...pizzasSalgadas, ...pizzasDoces];
 
 export const drinks: Drink[] = [
   { id: 'coca-lata', name: 'Coca-Cola', type: 'refrigerante', price: 6, size: 'Lata 350ml' },
