@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Clock, 
@@ -11,13 +10,18 @@ import {
   RefreshCw,
   LogOut,
   Store,
-  Bell
+  Bell,
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -69,19 +73,32 @@ const NEXT_STATUS: Record<OrderStatus, OrderStatus | null> = {
 };
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, signIn, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  
+  // Login form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  useEffect(() => {
-    if (!adminLoading && !isAdmin) {
-      toast.error('Acesso negado');
-      navigate('/');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    
+    const { error } = await signIn(email, password);
+    
+    if (error) {
+      toast.error('Erro ao fazer login', {
+        description: 'Verifique seu email e senha'
+      });
     }
-  }, [isAdmin, adminLoading, navigate]);
+    
+    setLoginLoading(false);
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -183,7 +200,8 @@ const AdminDashboard = () => {
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   };
 
-  if (adminLoading || loading) {
+  // Show loading while auth is being resolved
+  if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
@@ -191,8 +209,110 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin) {
-    return null;
+  // Show login form if not logged in or not admin
+  if (!user || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-primary p-6 text-center">
+              <div className="w-16 h-16 bg-primary-foreground/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-primary-foreground" />
+              </div>
+              <h1 className="text-2xl font-display font-bold text-primary-foreground">
+                Painel Administrativo
+              </h1>
+              <p className="text-primary-foreground/80 text-sm mt-1">
+                Del Capone Pizzaria
+              </p>
+            </div>
+
+            {/* Login Form */}
+            <form onSubmit={handleLogin} className="p-6 space-y-4">
+              {user && !isAdmin && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive text-center">
+                  Esta conta não tem permissão de administrador
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@exemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loginLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loginLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                size="lg"
+                disabled={loginLoading}
+              >
+                {loginLoading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Lock className="w-4 h-4 mr-2" />
+                )}
+                Entrar
+              </Button>
+
+              {user && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => signOut()}
+                >
+                  Sair da conta atual
+                </Button>
+              )}
+            </form>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Show loading while fetching orders
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
@@ -212,10 +332,7 @@ const AdminDashboard = () => {
               variant="ghost" 
               size="icon"
               className="text-primary-foreground hover:bg-primary-foreground/20"
-              onClick={() => {
-                signOut();
-                navigate('/');
-              }}
+              onClick={() => signOut()}
             >
               <LogOut className="w-5 h-5" />
             </Button>
