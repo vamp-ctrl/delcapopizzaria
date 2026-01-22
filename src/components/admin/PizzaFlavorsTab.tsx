@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { pizzas as initialPizzas } from '@/data/menu';
+import { pizzas } from '@/data/menu';
 import { Pizza as PizzaType } from '@/types/menu';
 import {
   Dialog,
@@ -24,7 +24,7 @@ interface EditablePizza extends PizzaType {
 
 const PizzaFlavorsTab = () => {
   const [pizzaList, setPizzaList] = useState<EditablePizza[]>(
-    initialPizzas.map(p => ({ ...p, isActive: true }))
+    pizzas.map(p => ({ ...p, isActive: true }))
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPizza, setEditingPizza] = useState<EditablePizza | null>(null);

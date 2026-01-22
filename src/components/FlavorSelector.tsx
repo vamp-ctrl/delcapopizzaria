@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Search, Check, AlertCircle, Star } from 'lucide-react';
+import { X, ShoppingCart, Search, Check, AlertCircle, Star, Cookie, Flame } from 'lucide-react';
 import { Pizza, PizzaSize, MAX_FLAVORS, SIZE_PRICES } from '@/types/menu';
-import { pizzas } from '@/data/menu';
+import { pizzasSalgadas, pizzasDoces } from '@/data/menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
@@ -29,10 +29,14 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
   const maxFlavors = MAX_FLAVORS[selectedSize];
   const isAtLimit = selectedFlavors.length >= maxFlavors;
   
-  const filteredPizzas = pizzas.filter(pizza =>
-    pizza.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pizza.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filterPizzas = (pizzas: Pizza[]) =>
+    pizzas.filter(pizza =>
+      pizza.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pizza.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  const filteredSalgadas = filterPizzas(pizzasSalgadas);
+  const filteredDoces = filterPizzas(pizzasDoces);
 
   const handleToggleFlavor = (pizza: Pizza) => {
     const isSelected = selectedFlavors.some(f => f.id === pizza.id);
@@ -89,6 +93,70 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
     setSelectedFlavors([]);
     setSearchTerm('');
     onClose();
+  };
+
+  const renderPizzaCard = (pizza: Pizza) => {
+    const isSelected = selectedFlavors.some(f => f.id === pizza.id);
+    const isDisabled = !isSelected && isAtLimit;
+    
+    return (
+      <motion.button
+        key={pizza.id}
+        onClick={() => !isDisabled && handleToggleFlavor(pizza)}
+        disabled={isDisabled}
+        whileTap={!isDisabled ? { scale: 0.98 } : {}}
+        className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+          isSelected
+            ? pizza.isPremium 
+              ? 'border-secondary bg-secondary/10 shadow-md'
+              : 'border-primary bg-primary/10 shadow-md'
+            : isDisabled
+            ? 'border-border bg-muted/50 opacity-50 cursor-not-allowed'
+            : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className={`font-semibold ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
+                {pizza.name}
+              </p>
+              {pizza.isPremium && (
+                <span className="px-2 py-0.5 bg-secondary/20 text-secondary text-xs font-bold rounded-full flex items-center gap-1">
+                  <Star className="w-3 h-3" />
+                  Especial
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {pizza.description}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {pizza.isPremium ? (
+              <span className="text-sm font-bold text-secondary">
+                +R$ {pizza.premiumPrice?.toFixed(2)}
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                Incluso
+              </span>
+            )}
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+              isSelected 
+                ? pizza.isPremium 
+                  ? 'bg-secondary border-secondary' 
+                  : 'bg-primary border-primary'
+                : isDisabled 
+                ? 'border-muted-foreground/30'
+                : 'border-muted-foreground'
+            }`}>
+              {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
+            </div>
+          </div>
+        </div>
+      </motion.button>
+    );
   };
 
   return (
@@ -218,71 +286,39 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
 
             {/* Flavors list */}
             <div className="overflow-y-auto flex-1 p-4">
-              <div className="space-y-2">
-                {filteredPizzas.map(pizza => {
-                  const isSelected = selectedFlavors.some(f => f.id === pizza.id);
-                  const isDisabled = !isSelected && isAtLimit;
-                  
-                  return (
-                    <motion.button
-                      key={pizza.id}
-                      onClick={() => !isDisabled && handleToggleFlavor(pizza)}
-                      disabled={isDisabled}
-                      whileTap={!isDisabled ? { scale: 0.98 } : {}}
-                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                        isSelected
-                          ? pizza.isPremium 
-                            ? 'border-secondary bg-secondary/10 shadow-md'
-                            : 'border-primary bg-primary/10 shadow-md'
-                          : isDisabled
-                          ? 'border-border bg-muted/50 opacity-50 cursor-not-allowed'
-                          : 'border-border hover:border-primary/50 bg-background hover:shadow-sm'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={`font-semibold ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
-                              {pizza.name}
-                            </p>
-                            {pizza.isPremium && (
-                              <span className="px-2 py-0.5 bg-secondary/20 text-secondary text-xs font-bold rounded-full flex items-center gap-1">
-                                <Star className="w-3 h-3" />
-                                Especial
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {pizza.description}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {pizza.isPremium ? (
-                            <span className="text-sm font-bold text-secondary">
-                              +R$ {pizza.premiumPrice?.toFixed(2)}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              Incluso
-                            </span>
-                          )}
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                            isSelected 
-                              ? pizza.isPremium 
-                                ? 'bg-secondary border-secondary' 
-                                : 'bg-primary border-primary'
-                              : isDisabled 
-                              ? 'border-muted-foreground/30'
-                              : 'border-muted-foreground'
-                          }`}>
-                            {isSelected && <Check className="w-4 h-4 text-white" />}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+              {/* Salgadas Section */}
+              {filteredSalgadas.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3 sticky top-0 bg-background py-2 z-10">
+                    <Flame className="w-5 h-5 text-primary" />
+                    <h4 className="font-display font-bold text-foreground">Salgadas</h4>
+                    <span className="text-xs text-muted-foreground">({filteredSalgadas.length} sabores)</span>
+                  </div>
+                  <div className="space-y-2">
+                    {filteredSalgadas.map(pizza => renderPizzaCard(pizza))}
+                  </div>
+                </div>
+              )}
+
+              {/* Doces Section */}
+              {filteredDoces.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3 sticky top-0 bg-background py-2 z-10">
+                    <Cookie className="w-5 h-5 text-secondary" />
+                    <h4 className="font-display font-bold text-foreground">Doces</h4>
+                    <span className="text-xs text-muted-foreground">({filteredDoces.length} sabores)</span>
+                  </div>
+                  <div className="space-y-2">
+                    {filteredDoces.map(pizza => renderPizzaCard(pizza))}
+                  </div>
+                </div>
+              )}
+
+              {filteredSalgadas.length === 0 && filteredDoces.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhum sabor encontrado
+                </p>
+              )}
             </div>
 
             {/* Summary and Add to cart */}
