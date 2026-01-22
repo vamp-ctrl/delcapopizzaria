@@ -24,13 +24,8 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
       return;
     }
 
-    const message = items
-      .map(item => `${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}`)
-      .join('%0A');
-    
-    const whatsappUrl = `https://w.app/sg7lgy?text=Olá! Gostaria de fazer um pedido:%0A%0A${message}%0A%0ATotal: R$ ${total.toFixed(2)}`;
-    window.open(whatsappUrl, '_blank');
-    toast.success('Redirecionando para o WhatsApp...');
+    onClose();
+    navigate('/checkout');
   };
 
   return (
@@ -145,7 +140,7 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
                     onClick={handleCheckout}
                     className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
                   >
-                    {user ? 'Pedir via WhatsApp' : 'Fazer Login'}
+                    {user ? 'Finalizar Pedido' : 'Fazer Login'}
                   </Button>
                 </div>
               </div>

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { CartProvider } from '@/context/CartContext';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Menu from '@/components/Menu';
@@ -13,20 +12,18 @@ const Index = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   return (
-    <CartProvider>
-      <div className="min-h-screen bg-background">
-        <Header onCartClick={() => setIsCartOpen(true)} />
-        <main className="pt-16">
-          <Hero />
-          <Menu />
-        </main>
-        <Footer />
-        <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-        <Chat />
-        <WhatsAppButton />
-        <InfoButton />
-      </div>
-    </CartProvider>
+    <div className="min-h-screen bg-background">
+      <Header onCartClick={() => setIsCartOpen(true)} />
+      <main className="pt-16">
+        <Hero />
+        <Menu />
+      </main>
+      <Footer />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <Chat />
+      <WhatsAppButton />
+      <InfoButton />
+    </div>
   );
 };
 
