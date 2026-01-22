@@ -139,25 +139,38 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      // 3. Create payment with Mercado Pago
-      const response = await supabase.functions.invoke('create-payment', {
-        body: {
-          orderId: order.id,
-          amount: finalTotal,
-          customerEmail: user.email,
-          customerName: customerName,
-          description: `Pedido Del Capo Pizzaria - ${items.length} item(s)`,
-          paymentMethod: paymentMethod,
-        },
-      });
+      // 3. Try to create payment with Mercado Pago
+      try {
+        const response = await supabase.functions.invoke('create-payment', {
+          body: {
+            orderId: order.id,
+            amount: finalTotal,
+            customerEmail: user.email,
+            customerName: customerName,
+            description: `Pedido Del Capo Pizzaria - ${items.length} item(s)`,
+            paymentMethod: paymentMethod,
+          },
+        });
 
-      if (response.error) throw response.error;
+        if (response.error || !response.data?.initPoint) {
+          // Payment creation failed, but order was created
+          console.error('Payment error:', response.error);
+          clearCart();
+          toast.success('Pedido enviado! Pagamento será combinado via WhatsApp.');
+          navigate(`/pedido-confirmado?order_id=${order.id}`);
+          return;
+        }
 
-      const { initPoint } = response.data;
-
-      // 4. Clear cart and redirect to payment
-      clearCart();
-      window.location.href = initPoint;
+        const { initPoint } = response.data;
+        clearCart();
+        window.location.href = initPoint;
+      } catch (paymentError) {
+        // Payment failed but order was created successfully
+        console.error('Payment error:', paymentError);
+        clearCart();
+        toast.success('Pedido enviado! Pagamento será combinado via WhatsApp.');
+        navigate(`/pedido-confirmado?order_id=${order.id}`);
+      }
 
     } catch (error) {
       console.error('Error creating order:', error);
