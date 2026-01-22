@@ -1,33 +1,94 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
   isUser: boolean;
   time: string;
 }
 
 const Chat = () => {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
+      id: 'welcome',
       text: 'Olá! Bem-vindo à Del Capo Pizzaria! Como posso ajudar?',
       isUser: false,
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
+  useEffect(() => {
+    if (!user) return;
+
+    // Fetch existing messages
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('sender_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (data && data.length > 0) {
+        const formattedMessages: Message[] = data.map(msg => ({
+          id: msg.id,
+          text: msg.message,
+          isUser: msg.sender_type === 'customer',
+          time: new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        }));
+        setMessages([messages[0], ...formattedMessages]);
+      }
+    };
+
+    fetchMessages();
+
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('customer-chat')
+      .on(
+        'postgres_changes',
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'chat_messages',
+          filter: `sender_type=eq.admin`
+        },
+        (payload) => {
+          const newMsg = payload.new;
+          // Check if this message is for us (admin reply)
+          setMessages(prev => [...prev, {
+            id: newMsg.id,
+            text: newMsg.message,
+            isUser: false,
+            time: new Date(newMsg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          }]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async () => {
     if (!message.trim()) return;
 
     const newMessage: Message = {
-      id: Date.now(),
+      id: `msg-${Date.now()}`,
       text: message,
       isUser: true,
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -36,16 +97,29 @@ const Chat = () => {
     setMessages(prev => [...prev, newMessage]);
     setMessage('');
 
-    // Simulated response
-    setTimeout(() => {
-      const response: Message = {
-        id: Date.now() + 1,
-        text: 'Obrigado pela mensagem! Para um atendimento mais rápido, entre em contato pelo nosso WhatsApp clicando no botão verde no canto da tela.',
-        isUser: false,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, response]);
-    }, 1000);
+    // Save to database if user is logged in
+    if (user) {
+      const { error } = await supabase.from('chat_messages').insert({
+        sender_id: user.id,
+        sender_type: 'customer',
+        message: message.trim(),
+      });
+
+      if (error) {
+        console.error('Error sending message:', error);
+      }
+    } else {
+      // If not logged in, show a simulated response
+      setTimeout(() => {
+        const response: Message = {
+          id: `resp-${Date.now()}`,
+          text: 'Para um atendimento personalizado, faça login na sua conta. Ou entre em contato pelo nosso WhatsApp clicando no botão verde!',
+          isUser: false,
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, response]);
+      }, 1000);
+    }
   };
 
   return (
@@ -71,7 +145,9 @@ const Chat = () => {
           >
             <div className="bg-primary p-4">
               <h3 className="text-primary-foreground font-semibold">Chat - Del Capo</h3>
-              <p className="text-primary-foreground/80 text-sm">Online agora</p>
+              <p className="text-primary-foreground/80 text-sm">
+                {user ? 'Online agora' : 'Faça login para conversar'}
+              </p>
             </div>
 
             <div className="h-64 overflow-y-auto p-4 space-y-3 bg-muted/30">
@@ -96,6 +172,7 @@ const Chat = () => {
                   </div>
                 </motion.div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             <div className="p-3 border-t border-border bg-card">
@@ -112,7 +189,7 @@ const Chat = () => {
                   placeholder="Digite sua mensagem..."
                   className="flex-1"
                 />
-                <Button type="submit" size="icon" className="bg-primary hover:bg-tomato-light">
+                <Button type="submit" size="icon" className="bg-primary hover:bg-primary/90">
                   <Send className="w-4 h-4" />
                 </Button>
               </form>

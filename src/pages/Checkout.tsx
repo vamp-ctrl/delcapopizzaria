@@ -28,6 +28,7 @@ const Checkout = () => {
   
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [storeOpen, setStoreOpen] = useState(true);
   
   // Form state
   const [customerName, setCustomerName] = useState('');
@@ -39,6 +40,15 @@ const Checkout = () => {
 
   const deliveryFee = deliveryType === 'delivery' ? 5 : 0;
   const finalTotal = total + deliveryFee;
+
+  // Check if store is open
+  useEffect(() => {
+    const checkStoreStatus = async () => {
+      const { data } = await supabase.from('store_settings').select('is_open').single();
+      if (data) setStoreOpen(data.is_open);
+    };
+    checkStoreStatus();
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -360,9 +370,15 @@ const Checkout = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
+            {!storeOpen && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-center mb-4">
+                <p className="text-destructive font-medium">🚫 Loja fechada no momento</p>
+                <p className="text-sm text-muted-foreground">Volte durante nosso horário de funcionamento</p>
+              </div>
+            )}
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !storeOpen}
               className="w-full h-14 text-lg font-semibold"
               size="lg"
             >
