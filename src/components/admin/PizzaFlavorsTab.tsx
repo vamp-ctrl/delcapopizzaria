@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Pizza, Check, X, Crown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Pizza, Check, X, Crown, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,8 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { pizzas } from '@/data/menu';
-import { Pizza as PizzaType } from '@/types/menu';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -17,38 +16,81 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-interface EditablePizza extends PizzaType {
-  isActive: boolean;
+interface DbProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  category_id: string | null;
+  base_price: number;
+  is_active: boolean;
+}
+
+interface DbCategory {
+  id: string;
+  name: string;
 }
 
 const PizzaFlavorsTab = () => {
-  const [pizzaList, setPizzaList] = useState<EditablePizza[]>(
-    pizzas.map(p => ({ ...p, isActive: true }))
-  );
+  const [pizzaList, setPizzaList] = useState<DbProduct[]>([]);
+  const [categories, setCategories] = useState<DbCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPizza, setEditingPizza] = useState<EditablePizza | null>(null);
+  const [editingPizza, setEditingPizza] = useState<DbProduct | null>(null);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    category_id: '',
     isPremium: false,
     premiumPrice: 10,
   });
 
-  const handleOpenDialog = (pizza?: EditablePizza) => {
+  const fetchData = async () => {
+    try {
+      const [{ data: products }, { data: cats }] = await Promise.all([
+        supabase.from('products').select('*').order('name'),
+        supabase.from('categories').select('id, name').eq('is_active', true).order('display_order'),
+      ]);
+
+      setPizzaList(products || []);
+      setCategories(cats || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleOpenDialog = (pizza?: DbProduct) => {
     if (pizza) {
       setEditingPizza(pizza);
       setFormData({
         name: pizza.name,
-        description: pizza.description,
-        isPremium: pizza.isPremium || false,
-        premiumPrice: pizza.premiumPrice || 10,
+        description: pizza.description || '',
+        category_id: pizza.category_id || '',
+        isPremium: pizza.base_price > 0,
+        premiumPrice: pizza.base_price > 0 ? pizza.base_price : 10,
       });
     } else {
       setEditingPizza(null);
       setFormData({
         name: '',
         description: '',
+        category_id: categories[0]?.id || '',
         isPremium: false,
         premiumPrice: 10,
       });
@@ -56,92 +98,152 @@ const PizzaFlavorsTab = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim() || !formData.description.trim()) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    if (editingPizza) {
-      // Update existing
-      setPizzaList(prev =>
-        prev.map(p =>
-          p.id === editingPizza.id
-            ? {
-                ...p,
-                name: formData.name,
-                description: formData.description,
-                isPremium: formData.isPremium,
-                premiumPrice: formData.isPremium ? formData.premiumPrice : undefined,
-              }
-            : p
-        )
-      );
-      toast.success('Sabor atualizado com sucesso!');
-    } else {
-      // Create new
-      const newPizza: EditablePizza = {
-        id: `pizza-${Date.now()}`,
-        name: formData.name,
-        description: formData.description,
-        isPremium: formData.isPremium,
-        premiumPrice: formData.isPremium ? formData.premiumPrice : undefined,
-        isActive: true,
+    setSaving(true);
+
+    try {
+      const productData = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        category_id: formData.category_id || null,
+        base_price: formData.isPremium ? formData.premiumPrice : 0,
       };
-      setPizzaList(prev => [...prev, newPizza]);
-      toast.success('Sabor adicionado com sucesso!');
+
+      if (editingPizza) {
+        const { error } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', editingPizza.id);
+
+        if (error) throw error;
+        toast.success('Sabor atualizado com sucesso!');
+      } else {
+        const { error } = await supabase
+          .from('products')
+          .insert(productData);
+
+        if (error) throw error;
+        toast.success('Sabor adicionado com sucesso!');
+      }
+
+      setIsDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast.error('Erro ao salvar');
+    } finally {
+      setSaving(false);
     }
-
-    setIsDialogOpen(false);
   };
 
-  const handleToggleActive = (id: string) => {
-    setPizzaList(prev =>
-      prev.map(p => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setPizzaList(prev =>
+        prev.map(p => (p.id === id ? { ...p, is_active: !currentStatus } : p))
+      );
+      toast.success(currentStatus ? 'Sabor desativado' : 'Sabor ativado');
+    } catch (error) {
+      console.error('Error toggling:', error);
+      toast.error('Erro ao atualizar');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setPizzaList(prev => prev.filter(p => p.id !== id));
+      toast.success('Sabor removido com sucesso!');
+    } catch (error) {
+      console.error('Error deleting:', error);
+      toast.error('Erro ao remover');
+    }
+  };
+
+  const getCategoryName = (categoryId: string | null) => {
+    return categories.find(c => c.id === categoryId)?.name || 'Sem categoria';
+  };
+
+  const filteredPizzas = pizzaList.filter(pizza =>
+    pizza.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (pizza.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
     );
-  };
-
-  const handleDelete = (id: string) => {
-    setPizzaList(prev => prev.filter(p => p.id !== id));
-    toast.success('Sabor removido com sucesso!');
-  };
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Pizza className="w-5 h-5 text-primary" />
-          Sabores de Pizza ({pizzaList.length})
+          Sabores de Pizza ({pizzaList.filter(p => p.is_active).length} ativos)
         </h2>
-        <Button onClick={() => handleOpenDialog()} size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Adicionar
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar sabor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
+          <Button onClick={() => handleOpenDialog()} size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
         <AnimatePresence>
-          {pizzaList.map((pizza, index) => (
+          {filteredPizzas.map((pizza, index) => (
             <motion.div
               key={pizza.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ delay: index * 0.05 }}
+              transition={{ delay: index * 0.02 }}
               className={`p-4 rounded-xl border ${
-                pizza.isActive
+                pizza.is_active
                   ? 'bg-card border-border'
                   : 'bg-muted/50 border-muted opacity-60'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold truncate">{pizza.name}</h3>
-                    {pizza.isPremium && (
+                    <Badge variant="outline" className="text-xs">
+                      {getCategoryName(pizza.category_id)}
+                    </Badge>
+                    {pizza.base_price > 0 && (
                       <Badge variant="secondary" className="flex items-center gap-1">
                         <Crown className="w-3 h-3" />
-                        +R$ {pizza.premiumPrice}
+                        +R$ {pizza.base_price}
                       </Badge>
                     )}
                   </div>
@@ -152,8 +254,8 @@ const PizzaFlavorsTab = () => {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <Switch
-                    checked={pizza.isActive}
-                    onCheckedChange={() => handleToggleActive(pizza.id)}
+                    checked={pizza.is_active}
+                    onCheckedChange={() => handleToggleActive(pizza.id, pizza.is_active)}
                   />
                   <Button
                     variant="ghost"
@@ -176,6 +278,12 @@ const PizzaFlavorsTab = () => {
           ))}
         </AnimatePresence>
       </div>
+
+      {filteredPizzas.length === 0 && (
+        <p className="text-center text-muted-foreground py-8">
+          {searchTerm ? 'Nenhum sabor encontrado' : 'Nenhum sabor cadastrado'}
+        </p>
+      )}
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -206,6 +314,25 @@ const PizzaFlavorsTab = () => {
                 placeholder="Ingredientes do sabor..."
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
+              <Select
+                value={formData.category_id}
+                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-lg border border-border">
@@ -248,12 +375,16 @@ const PizzaFlavorsTab = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
               <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
-            <Button onClick={handleSave}>
-              <Check className="w-4 h-4 mr-2" />
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4 mr-2" />
+              )}
               Salvar
             </Button>
           </DialogFooter>

@@ -4,7 +4,7 @@ import { MessageSquare } from 'lucide-react';
 const WhatsAppButton = () => {
   return (
     <motion.a
-      href="https://w.app/sg7lgy"
+      href="https://wa.me/5569992517150"
       target="_blank"
       rel="noopener noreferrer"
       whileHover={{ scale: 1.1 }}

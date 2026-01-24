@@ -16,7 +16,7 @@ const Footer = () => {
               </div>
             </div>
             <p className="text-background/80 text-sm">
-              Tradição e sabor em cada fatia. Desde 2010 fazendo as melhores pizzas da cidade.
+              Qualidade em cada fatia.
             </p>
           </div>
 
@@ -24,17 +24,17 @@ const Footer = () => {
             <h4 className="font-display text-lg font-semibold mb-4">Contato</h4>
             <div className="space-y-3">
               <a
-                href="https://w.app/sg7lgy"
+                href="https://wa.me/5569992517150"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-background/80 hover:text-primary transition-colors"
               >
                 <Phone className="w-4 h-4" />
-                <span>(69) 99361-8962</span>
+                <span>+55 (69) 9 9251-7150</span>
               </a>
               <div className="flex items-center gap-2 text-background/80">
                 <MapPin className="w-4 h-4" />
-                <span>Rua Principal, 123 - Centro, Porto Velho - RO</span>
+                <span>Av. Curitiba, 3482 - Jardim Primavera, Vilhena - RO</span>
               </div>
             </div>
           </div>
@@ -45,7 +45,7 @@ const Footer = () => {
               <Clock className="w-4 h-4 mt-0.5" />
               <div>
                 <p>Terça a Domingo</p>
-                <p>18h às 23h</p>
+                <p>17:30h às 23:30h</p>
               </div>
             </div>
           </div>

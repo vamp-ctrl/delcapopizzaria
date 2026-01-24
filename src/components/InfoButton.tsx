@@ -52,10 +52,10 @@ const InfoButton = () => {
                   <div>
                     <p className="font-medium text-foreground">Telefone</p>
                     <a 
-                      href="tel:+5569993618962"
+                      href="tel:+5569992517150"
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
-                      (69) 99361-8962
+                      +55 (69) 9 9251-7150
                     </a>
                   </div>
                 </div>
@@ -66,8 +66,8 @@ const InfoButton = () => {
                   <div>
                     <p className="font-medium text-foreground">Endereço</p>
                     <p className="text-sm text-muted-foreground">
-                      Rua Principal, 123 - Centro<br />
-                      Porto Velho - RO
+                      Av. Curitiba, 3482 - Jardim Primavera<br />
+                      Vilhena - RO
                     </p>
                   </div>
                 </div>
@@ -97,7 +97,7 @@ const InfoButton = () => {
                 {/* Hours */}
                 <div className="pt-2 border-t border-border">
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">Horário:</span> Ter a Dom, 18h às 23h
+                    <span className="font-medium text-foreground">Horário:</span> Ter a Dom, 17:30h às 23:30h
                   </p>
                 </div>
               </div>

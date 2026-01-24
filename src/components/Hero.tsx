@@ -38,7 +38,7 @@ const Hero = () => {
             Pizzaria
           </p>
           <p className="text-lg text-cream/90 max-w-md mx-auto">
-            Tradição italiana com ingredientes selecionados. Pizzas artesanais feitas com amor.
+            Qualidade em cada fatia.
           </p>
           
           <motion.div

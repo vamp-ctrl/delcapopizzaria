@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Search, Check, AlertCircle, Star, Cookie, Flame } from 'lucide-react';
+import { X, ShoppingCart, Search, Check, AlertCircle, Star, Cookie, Flame, Loader2 } from 'lucide-react';
 import { Pizza, PizzaSize, MAX_FLAVORS, SIZE_PRICES } from '@/types/menu';
-import { pizzasSalgadas, pizzasDoces } from '@/data/menu';
+import { usePizzas } from '@/hooks/usePizzas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
@@ -25,6 +25,7 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
   const [selectedFlavors, setSelectedFlavors] = useState<Pizza[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const { addItem } = useCart();
+  const { pizzasSalgadas, pizzasDoces, loading } = usePizzas();
 
   const maxFlavors = MAX_FLAVORS[selectedSize];
   const isAtLimit = selectedFlavors.length >= maxFlavors;
@@ -286,38 +287,46 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
 
             {/* Flavors list */}
             <div className="overflow-y-auto flex-1 p-4">
-              {/* Salgadas Section */}
-              {filteredSalgadas.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3 sticky top-0 bg-background py-2 z-10">
-                    <Flame className="w-5 h-5 text-primary" />
-                    <h4 className="font-display font-bold text-foreground">Salgadas</h4>
-                    <span className="text-xs text-muted-foreground">({filteredSalgadas.length} sabores)</span>
-                  </div>
-                  <div className="space-y-2">
-                    {filteredSalgadas.map(pizza => renderPizzaCard(pizza))}
-                  </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Salgadas Section */}
+                  {filteredSalgadas.length > 0 && (
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3 sticky top-0 bg-background py-2 z-10">
+                        <Flame className="w-5 h-5 text-primary" />
+                        <h4 className="font-display font-bold text-foreground">Salgadas</h4>
+                        <span className="text-xs text-muted-foreground">({filteredSalgadas.length} sabores)</span>
+                      </div>
+                      <div className="space-y-2">
+                        {filteredSalgadas.map(pizza => renderPizzaCard(pizza))}
+                      </div>
+                    </div>
+                  )}
 
-              {/* Doces Section */}
-              {filteredDoces.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3 sticky top-0 bg-background py-2 z-10">
-                    <Cookie className="w-5 h-5 text-secondary" />
-                    <h4 className="font-display font-bold text-foreground">Doces</h4>
-                    <span className="text-xs text-muted-foreground">({filteredDoces.length} sabores)</span>
-                  </div>
-                  <div className="space-y-2">
-                    {filteredDoces.map(pizza => renderPizzaCard(pizza))}
-                  </div>
-                </div>
-              )}
+                  {/* Doces Section */}
+                  {filteredDoces.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3 sticky top-0 bg-background py-2 z-10">
+                        <Cookie className="w-5 h-5 text-secondary" />
+                        <h4 className="font-display font-bold text-foreground">Doces</h4>
+                        <span className="text-xs text-muted-foreground">({filteredDoces.length} sabores)</span>
+                      </div>
+                      <div className="space-y-2">
+                        {filteredDoces.map(pizza => renderPizzaCard(pizza))}
+                      </div>
+                    </div>
+                  )}
 
-              {filteredSalgadas.length === 0 && filteredDoces.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhum sabor encontrado
-                </p>
+                  {filteredSalgadas.length === 0 && filteredDoces.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      Nenhum sabor encontrado
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
