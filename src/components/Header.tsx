@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
-import { ShoppingCart, Phone, User, LogOut } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Clock, Truck, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import OpenStatus from './OpenStatus';
 import { toast } from 'sonner';
-
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 interface HeaderProps {
   onCartClick: () => void;
 }
@@ -15,6 +16,18 @@ const Header = ({ onCartClick }: HeaderProps) => {
   const { itemCount } = useCart();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const { data: storeStatus } = useQuery({
+    queryKey: ['store-status-header'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_status')
+        .select('delivery_time_minutes, pickup_time_minutes, minimum_order')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -41,13 +54,24 @@ const Header = ({ onCartClick }: HeaderProps) => {
         <div className="flex items-center gap-2 sm:gap-3">
           <OpenStatus />
           
-          <a
-            href="tel:+5569993618962"
-            className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors"
-          >
-            <Phone className="w-4 h-4" />
-            <span>(69) 99361-8962</span>
-          </a>
+          {storeStatus && (
+            <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1" title="Tempo de entrega">
+                <Truck className="w-3.5 h-3.5" />
+                <span>{storeStatus.delivery_time_minutes}min</span>
+              </div>
+              <div className="flex items-center gap-1" title="Tempo de retirada">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{storeStatus.pickup_time_minutes}min</span>
+              </div>
+              {storeStatus.minimum_order > 0 && (
+                <div className="flex items-center gap-1" title="Pedido mínimo">
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <span>Mín R${storeStatus.minimum_order}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {user ? (
             <Button
