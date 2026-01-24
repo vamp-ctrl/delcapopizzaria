@@ -1,22 +1,61 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Home, Clock } from 'lucide-react';
+import { CheckCircle2, Home, Clock, Truck, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+
+interface OrderDetails {
+  id: string;
+  customer_address: string | null;
+}
 
 const OrderConfirmed = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const orderId = searchParams.get('order_id');
   const [orderNumber, setOrderNumber] = useState<string>('');
+  const [isDelivery, setIsDelivery] = useState(true);
+
+  // Fetch store status for times
+  const { data: storeStatus } = useQuery({
+    queryKey: ['store-status-confirmation'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('store_status')
+        .select('delivery_time_minutes, pickup_time_minutes')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     if (orderId) {
       // Get last 6 chars of order ID as order number
       setOrderNumber(orderId.slice(-6).toUpperCase());
+      
+      // Check if it's delivery or pickup
+      const fetchOrderType = async () => {
+        const { data } = await supabase
+          .from('orders')
+          .select('customer_address')
+          .eq('id', orderId)
+          .single();
+        
+        if (data) {
+          setIsDelivery(!!data.customer_address);
+        }
+      };
+      
+      fetchOrderType();
     }
   }, [orderId]);
+
+  const estimatedTime = isDelivery 
+    ? storeStatus?.delivery_time_minutes || 45
+    : storeStatus?.pickup_time_minutes || 20;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -51,15 +90,25 @@ const OrderConfirmed = () => {
         )}
 
         <div className="p-4 rounded-xl bg-muted flex items-center gap-3">
-          <Clock className="w-6 h-6 text-primary" />
+          {isDelivery ? (
+            <Truck className="w-6 h-6 text-primary" />
+          ) : (
+            <Package className="w-6 h-6 text-primary" />
+          )}
           <div className="text-left">
-            <p className="font-medium">Tempo estimado</p>
-            <p className="text-sm text-muted-foreground">40-60 minutos</p>
+            <p className="font-medium">
+              {isDelivery ? 'Tempo estimado de entrega' : 'Tempo para retirada'}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Aproximadamente {estimatedTime} minutos
+            </p>
           </div>
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Você receberá atualizações sobre o status do seu pedido.
+          {isDelivery 
+            ? 'Você receberá atualizações sobre o status do seu pedido.'
+            : 'Seu pedido estará pronto para retirada na loja.'}
         </p>
 
         <Button onClick={() => navigate('/')} className="w-full" size="lg">

@@ -236,61 +236,168 @@ const OrdersTab = () => {
   };
 
   const handlePrint = (order: Order) => {
-    const printWindow = window.open('', '_blank', 'width=300,height=600');
+    const printWindow = window.open('', '_blank', 'width=320,height=800');
     if (!printWindow) return;
+
+    const isDelivery = !!order.customer_address;
+    const orderDate = new Date(order.created_at);
+    const dateStr = format(orderDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    const orderNum = order.id.slice(-8).toUpperCase();
+
+    // Parse items to show flavors properly
+    const formatItem = (item: OrderItem) => {
+      const notes = item.notes || '';
+      // Check if notes contain flavor info (format: "Sabores: X, Y, Z")
+      const flavorMatch = notes.match(/Sabores?:\s*(.+?)(?:\||$)/i);
+      const flavors = flavorMatch ? flavorMatch[1].trim() : null;
+      const otherNotes = notes.replace(/Sabores?:\s*.+?(?:\||$)/gi, '').trim();
+      
+      return { ...item, flavors, otherNotes };
+    };
+
+    const formattedItems = order.order_items.map(formatItem);
+
+    const paymentMethodLabel = {
+      pix: 'PIX',
+      credit: 'Cartão de Crédito',
+      debit: 'Cartão de Débito',
+      cash: 'Dinheiro',
+    }[order.payment_method || 'pix'] || order.payment_method;
+
+    const paymentStatusLabel = {
+      pending: 'AGUARDANDO PAGAMENTO',
+      paid: 'PAGO',
+      failed: 'FALHOU',
+      refunded: 'REEMBOLSADO',
+    }[order.payment_status] || order.payment_status;
 
     const content = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Comanda #${order.id.slice(0, 8)}</title>
+        <title>Comanda #${orderNum}</title>
         <style>
-          body { font-family: 'Courier New', monospace; font-size: 12px; width: 280px; margin: 0 auto; padding: 10px; }
-          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-          .title { font-size: 18px; font-weight: bold; }
-          .info { margin: 5px 0; }
-          .items { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-          .item { display: flex; justify-content: space-between; margin: 5px 0; }
-          .notes { background: #f0f0f0; padding: 5px; margin: 5px 0; font-style: italic; }
-          .total { font-size: 16px; font-weight: bold; text-align: right; }
-          .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 12px; 
+            width: 280px; 
+            margin: 0 auto; 
+            padding: 8px; 
+            line-height: 1.4;
+          }
+          .divider { border-top: 1px dashed #000; margin: 8px 0; }
+          .divider-double { border-top: 2px solid #000; margin: 8px 0; }
+          .center { text-align: center; }
+          .right { text-align: right; }
+          .bold { font-weight: bold; }
+          .title { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
+          .subtitle { font-size: 10px; margin-top: 2px; }
+          .section-title { font-weight: bold; font-size: 11px; margin-bottom: 4px; text-transform: uppercase; }
+          .row { display: flex; justify-content: space-between; margin: 2px 0; }
+          .item-block { margin: 6px 0; padding-left: 4px; border-left: 2px solid #000; }
+          .item-name { font-weight: bold; }
+          .item-detail { font-size: 11px; color: #333; margin-left: 8px; }
+          .flavors { font-style: italic; font-size: 11px; margin-left: 8px; }
+          .obs { background: #f5f5f5; padding: 4px 6px; font-size: 11px; margin: 4px 0; }
+          .total-section { background: #eee; padding: 8px; margin: 8px 0; }
+          .grand-total { font-size: 18px; font-weight: bold; }
+          .status-badge { 
+            display: inline-block; 
+            padding: 2px 8px; 
+            border: 1px solid #000; 
+            font-size: 10px; 
+            font-weight: bold;
+            margin: 4px 0;
+          }
+          .delivery-badge { background: #000; color: #fff; padding: 4px 8px; display: inline-block; margin: 4px 0; }
+          .footer { font-size: 10px; margin-top: 12px; }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="title">DEL CAPO PIZZARIA</div>
-          <div>${new Date(order.created_at).toLocaleString('pt-BR')}</div>
-          <div>Pedido #${order.id.slice(0, 8).toUpperCase()}</div>
+        <!-- CABEÇALHO -->
+        <div class="center">
+          <div class="title">🍕 DEL CAPO PIZZARIA</div>
+          <div class="subtitle">Sabor que conquista!</div>
         </div>
         
-        <div class="info">
-          <strong>Cliente:</strong> ${order.customer_name}<br/>
-          <strong>Tel:</strong> ${order.customer_phone}<br/>
-          ${order.customer_address ? `<strong>End:</strong> ${order.customer_address}` : '<strong>RETIRADA NA LOJA</strong>'}
+        <div class="divider-double"></div>
+        
+        <div class="center">
+          <div class="bold">PEDIDO #${orderNum}</div>
+          <div>${dateStr}</div>
+          <div class="${isDelivery ? 'delivery-badge' : 'status-badge'}">${isDelivery ? '🛵 DELIVERY' : '🏪 RETIRADA'}</div>
         </div>
         
-        <div class="items">
-          <strong>ITENS:</strong>
-          ${order.order_items.map(item => `
-            <div class="item">
-              <span>${item.quantity}x ${item.product_name}${item.size_name ? ` (${item.size_name})` : ''}</span>
-              <span>R$ ${item.total_price.toFixed(2)}</span>
+        <div class="divider"></div>
+        
+        <!-- DADOS DO CLIENTE -->
+        <div class="section-title">📋 Cliente</div>
+        <div><strong>Nome:</strong> ${order.customer_name}</div>
+        <div><strong>Tel:</strong> ${order.customer_phone}</div>
+        ${isDelivery ? `<div><strong>Endereço:</strong> ${order.customer_address}</div>` : ''}
+        
+        <div class="divider"></div>
+        
+        <!-- ITENS DO PEDIDO -->
+        <div class="section-title">🍕 Itens do Pedido</div>
+        ${formattedItems.map(item => `
+          <div class="item-block">
+            <div class="row">
+              <span class="item-name">${item.quantity}x ${item.product_name}</span>
+              <span class="bold">R$ ${item.total_price.toFixed(2)}</span>
             </div>
-            ${item.notes ? `<div class="notes">→ ${item.notes}</div>` : ''}
-          `).join('')}
+            ${item.size_name ? `<div class="item-detail">Tamanho: ${item.size_name}</div>` : ''}
+            ${item.flavors ? `<div class="flavors">↳ Sabores: ${item.flavors}</div>` : ''}
+            ${item.otherNotes ? `<div class="obs">OBS: ${item.otherNotes}</div>` : ''}
+          </div>
+        `).join('')}
+        
+        ${order.notes ? `
+          <div class="divider"></div>
+          <div class="section-title">📝 Observações Gerais</div>
+          <div class="obs">${order.notes}</div>
+        ` : ''}
+        
+        <div class="divider"></div>
+        
+        <!-- VALORES -->
+        <div class="total-section">
+          <div class="row">
+            <span>Subtotal:</span>
+            <span>R$ ${order.subtotal.toFixed(2)}</span>
+          </div>
+          ${order.delivery_fee > 0 ? `
+            <div class="row">
+              <span>Taxa de entrega:</span>
+              <span>R$ ${order.delivery_fee.toFixed(2)}</span>
+            </div>
+          ` : ''}
+          <div class="divider"></div>
+          <div class="row grand-total">
+            <span>TOTAL:</span>
+            <span>R$ ${order.total.toFixed(2)}</span>
+          </div>
         </div>
         
-        ${order.notes ? `<div class="notes"><strong>OBS:</strong> ${order.notes}</div>` : ''}
-        
-        <div class="total">
-          <div>Subtotal: R$ ${order.subtotal.toFixed(2)}</div>
-          <div>Entrega: R$ ${order.delivery_fee.toFixed(2)}</div>
-          <div style="font-size: 20px;">TOTAL: R$ ${order.total.toFixed(2)}</div>
+        <!-- PAGAMENTO -->
+        <div class="section-title">💳 Pagamento</div>
+        <div class="row">
+          <span>Forma:</span>
+          <span class="bold">${paymentMethodLabel}</span>
+        </div>
+        <div class="row">
+          <span>Status:</span>
+          <span class="status-badge">${paymentStatusLabel}</span>
         </div>
         
-        <div class="footer">
-          Obrigado pela preferência!<br/>
-          Del Capo Pizzaria
+        <div class="divider-double"></div>
+        
+        <!-- RODAPÉ -->
+        <div class="footer center">
+          <div>⭐ Obrigado pela preferência! ⭐</div>
+          <div style="margin-top: 4px;">Del Capo Pizzaria</div>
+          <div>📞 (69) 99361-8962</div>
         </div>
         
         <script>

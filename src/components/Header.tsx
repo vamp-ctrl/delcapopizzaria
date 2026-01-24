@@ -22,7 +22,7 @@ const Header = ({ onCartClick }: HeaderProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_status')
-        .select('delivery_time_minutes, pickup_time_minutes, minimum_order')
+        .select('delivery_time_minutes, pickup_time_minutes, minimum_order, delivery_fee')
         .single();
       if (error) throw error;
       return data;
@@ -64,6 +64,12 @@ const Header = ({ onCartClick }: HeaderProps) => {
                 <Clock className="w-3.5 h-3.5" />
                 <span>{storeStatus.pickup_time_minutes}min</span>
               </div>
+              {storeStatus.delivery_fee > 0 && (
+                <div className="flex items-center gap-1" title="Taxa de entrega">
+                  <Truck className="w-3.5 h-3.5" />
+                  <span>R${storeStatus.delivery_fee}</span>
+                </div>
+              )}
               {storeStatus.minimum_order > 0 && (
                 <div className="flex items-center gap-1" title="Pedido mínimo">
                   <DollarSign className="w-3.5 h-3.5" />
