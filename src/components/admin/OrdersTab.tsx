@@ -323,67 +323,70 @@ const OrdersTab = () => {
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: 'Courier New', Courier, monospace; 
-            font-size: 12px; 
+            font-size: 14px; 
+            font-weight: bold;
             width: 280px; 
             margin: 0 auto; 
             padding: 8px; 
-            line-height: 1.4;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
-          .divider { border-top: 1px dashed #000; margin: 8px 0; }
-          .divider-double { border-top: 2px solid #000; margin: 8px 0; }
+          .divider { border-top: 2px dashed #000; margin: 10px 0; }
+          .divider-double { border-top: 3px solid #000; margin: 10px 0; }
           .center { text-align: center; }
           .right { text-align: right; }
-          .bold { font-weight: bold; }
-          .title { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
-          .subtitle { font-size: 10px; margin-top: 2px; }
-          .section-title { font-weight: bold; font-size: 11px; margin-bottom: 4px; text-transform: uppercase; }
-          .row { display: flex; justify-content: space-between; margin: 2px 0; }
-          .item-block { margin: 6px 0; padding-left: 4px; border-left: 2px solid #000; }
-          .item-name { font-weight: bold; }
-          .item-detail { font-size: 11px; color: #333; margin-left: 8px; }
-          .flavors { font-style: italic; font-size: 11px; margin-left: 8px; }
-          .obs { background: #f5f5f5; padding: 4px 6px; font-size: 11px; margin: 4px 0; }
-          .total-section { background: #eee; padding: 8px; margin: 8px 0; }
-          .grand-total { font-size: 18px; font-weight: bold; }
+          .bold { font-weight: 900; }
+          .title { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
+          .subtitle { font-size: 12px; margin-top: 4px; font-weight: bold; }
+          .section-title { font-weight: 900; font-size: 14px; margin-bottom: 6px; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; }
+          .row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; }
+          .item-block { margin: 8px 0; padding-left: 6px; border-left: 3px solid #000; }
+          .item-name { font-weight: 900; font-size: 14px; }
+          .item-detail { font-size: 13px; margin-left: 8px; font-weight: bold; }
+          .flavors { font-size: 13px; margin-left: 8px; font-weight: bold; }
+          .obs { background: #ddd; padding: 6px 8px; font-size: 13px; margin: 6px 0; font-weight: bold; }
+          .total-section { background: #eee; padding: 10px; margin: 10px 0; }
+          .grand-total { font-size: 20px; font-weight: 900; }
           .status-badge { 
             display: inline-block; 
-            padding: 2px 8px; 
-            border: 1px solid #000; 
-            font-size: 10px; 
-            font-weight: bold;
-            margin: 4px 0;
+            padding: 4px 10px; 
+            border: 2px solid #000; 
+            font-size: 12px; 
+            font-weight: 900;
+            margin: 6px 0;
           }
-          .delivery-badge { background: #000; color: #fff; padding: 4px 8px; display: inline-block; margin: 4px 0; }
-          .footer { font-size: 10px; margin-top: 12px; }
+          .delivery-badge { background: #000; color: #fff; padding: 6px 10px; display: inline-block; margin: 6px 0; font-weight: 900; }
+          .footer { font-size: 12px; margin-top: 14px; font-weight: bold; }
         </style>
       </head>
       <body>
-        <!-- CABEÇALHO -->
+        <!-- CABECALHO -->
         <div class="center">
-          <div class="title">🍕 DEL CAPO PIZZARIA</div>
+          <div class="title">DEL CAPO PIZZARIA</div>
           <div class="subtitle">Sabor que conquista!</div>
         </div>
         
         <div class="divider-double"></div>
         
         <div class="center">
-          <div class="bold">PEDIDO #${orderNum}</div>
-          <div>${dateStr}</div>
-          <div class="${isDelivery ? 'delivery-badge' : 'status-badge'}">${isDelivery ? '🛵 DELIVERY' : '🏪 RETIRADA'}</div>
+          <div class="bold" style="font-size: 16px;">PEDIDO #${orderNum}</div>
+          <div style="font-size: 13px;">${dateStr}</div>
+          <div class="${isDelivery ? 'delivery-badge' : 'status-badge'}">${isDelivery ? 'DELIVERY' : 'RETIRADA'}</div>
         </div>
         
         <div class="divider"></div>
         
         <!-- DADOS DO CLIENTE -->
-        <div class="section-title">📋 Cliente</div>
+        <div class="section-title">CLIENTE</div>
         <div><strong>Nome:</strong> ${order.customer_name}</div>
         <div><strong>Tel:</strong> ${order.customer_phone}</div>
-        ${isDelivery ? `<div><strong>Endereço:</strong> ${order.customer_address}</div>` : ''}
+        ${isDelivery ? `<div><strong>Endereco:</strong> ${order.customer_address}</div>` : ''}
         
         <div class="divider"></div>
         
         <!-- ITENS DO PEDIDO -->
-        <div class="section-title">🍕 Itens do Pedido</div>
+        <div class="section-title">ITENS DO PEDIDO</div>
         ${formattedItems.map(item => `
           <div class="item-block">
             <div class="row">
@@ -391,14 +394,14 @@ const OrdersTab = () => {
               <span class="bold">R$ ${item.total_price.toFixed(2)}</span>
             </div>
             ${item.size_name ? `<div class="item-detail">Tamanho: ${item.size_name}</div>` : ''}
-            ${item.flavors ? `<div class="flavors">↳ Sabores: ${item.flavors}</div>` : ''}
-            ${item.otherNotes ? `<div class="obs">OBS: ${item.otherNotes}</div>` : ''}
+            ${item.flavors ? `<div class="flavors">Sabores: ${item.flavors}</div>` : ''}
+            ${item.otherNotes && item.otherNotes.length > 0 ? `<div class="obs">${item.otherNotes}</div>` : ''}
           </div>
         `).join('')}
         
         ${order.notes ? `
           <div class="divider"></div>
-          <div class="section-title">📝 Observações Gerais</div>
+          <div class="section-title">OBSERVACOES</div>
           <div class="obs">${order.notes}</div>
         ` : ''}
         
@@ -424,7 +427,7 @@ const OrdersTab = () => {
         </div>
         
         <!-- PAGAMENTO -->
-        <div class="section-title">💳 Pagamento</div>
+        <div class="section-title">PAGAMENTO</div>
         <div class="row">
           <span>Forma:</span>
           <span class="bold">${paymentMethodLabel}</span>
@@ -436,11 +439,11 @@ const OrdersTab = () => {
         
         <div class="divider-double"></div>
         
-        <!-- RODAPÉ -->
+        <!-- RODAPE -->
         <div class="footer center">
-          <div>⭐ Obrigado pela preferência! ⭐</div>
-          <div style="margin-top: 4px;">Del Capo Pizzaria</div>
-          <div>📞 (69) 99361-8962</div>
+          <div>Obrigado pela preferencia!</div>
+          <div style="margin-top: 6px;">Del Capo Pizzaria</div>
+          <div>(69) 99361-8962</div>
         </div>
         
         <script>

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
 import OrderConfirmed from "./pages/OrderConfirmed";
+import OrderTracking from "./pages/OrderTracking";
 import PaymentFailed from "./pages/PaymentFailed";
 import PaymentPending from "./pages/PaymentPending";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -31,6 +32,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/pedido-confirmado" element={<OrderConfirmed />} />
+                <Route path="/pedido/:orderId" element={<OrderTracking />} />
                 <Route path="/pagamento-falhou" element={<PaymentFailed />} />
                 <Route path="/pagamento-pendente" element={<PaymentPending />} />
                 <Route path="/admin" element={<AdminDashboard />} />

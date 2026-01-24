@@ -54,11 +54,14 @@ const PizzaFlavorsTab = () => {
     premiumPrice: 10,
   });
 
+  // IDs das categorias de pizza (Salgadas e Doces)
+  const DRINKS_CATEGORY_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
   const fetchData = async () => {
     try {
       const [{ data: products }, { data: cats }] = await Promise.all([
-        supabase.from('products').select('*').order('name'),
-        supabase.from('categories').select('id, name').eq('is_active', true).order('display_order'),
+        supabase.from('products').select('*').neq('category_id', DRINKS_CATEGORY_ID).order('name'),
+        supabase.from('categories').select('id, name').eq('is_active', true).neq('id', DRINKS_CATEGORY_ID).order('display_order'),
       ]);
 
       setPizzaList(products || []);

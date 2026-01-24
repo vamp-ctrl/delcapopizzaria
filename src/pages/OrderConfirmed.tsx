@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Home, Clock, Truck, Package } from 'lucide-react';
+import { CheckCircle2, Home, Clock, Truck, Package, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -78,7 +78,7 @@ const OrderConfirmed = () => {
             Pedido Confirmado!
           </h1>
           <p className="text-muted-foreground">
-            Seu pagamento foi aprovado com sucesso.
+            Seu pedido foi enviado para a loja.
           </p>
         </div>
 
@@ -106,15 +106,30 @@ const OrderConfirmed = () => {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          {isDelivery 
-            ? 'Você receberá atualizações sobre o status do seu pedido.'
-            : 'Seu pedido estará pronto para retirada na loja.'}
+          Acompanhe o status do seu pedido em tempo real.
         </p>
 
-        <Button onClick={() => navigate('/')} className="w-full" size="lg">
-          <Home className="w-5 h-5 mr-2" />
-          Voltar ao início
-        </Button>
+        <div className="space-y-3">
+          {orderId && (
+            <Button 
+              onClick={() => navigate(`/pedido/${orderId}`)} 
+              className="w-full" 
+              size="lg"
+            >
+              <Eye className="w-5 h-5 mr-2" />
+              Acompanhar Pedido
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/')} 
+            className="w-full" 
+            size="lg"
+          >
+            <Home className="w-5 h-5 mr-2" />
+            Voltar ao início
+          </Button>
+        </div>
       </motion.div>
     </div>
   );

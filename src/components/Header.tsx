@@ -41,16 +41,6 @@ const Header = ({ onCartClick }: HeaderProps) => {
       className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm"
     >
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-xl">DC</span>
-          </div>
-          <div>
-            <h1 className="font-display text-xl font-bold text-foreground">Del Capo</h1>
-            <p className="text-xs text-muted-foreground">Pizzaria</p>
-          </div>
-        </div>
-
         <div className="flex items-center gap-2 sm:gap-3">
           <OpenStatus />
           
@@ -66,12 +56,6 @@ const Header = ({ onCartClick }: HeaderProps) => {
                   <Clock className="w-3.5 h-3.5" />
                   <span>{storeStatus.pickup_time_minutes}min</span>
                 </div>
-                {storeStatus.delivery_fee > 0 && (
-                  <div className="flex items-center gap-1" title="Taxa de entrega">
-                    <DollarSign className="w-3.5 h-3.5" />
-                    <span>R${storeStatus.delivery_fee}</span>
-                  </div>
-                )}
                 {storeStatus.minimum_order > 0 && (
                   <div className="flex items-center gap-1" title="Pedido mínimo">
                     <DollarSign className="w-3.5 h-3.5" />
@@ -80,25 +64,28 @@ const Header = ({ onCartClick }: HeaderProps) => {
                 )}
               </div>
               {/* Mobile view - compact */}
-              <div className="flex sm:hidden items-center gap-2 text-[10px] text-muted-foreground">
+              <div className="flex sm:hidden items-center gap-1.5 text-[10px] text-muted-foreground">
                 <div className="flex items-center gap-0.5" title="Entrega">
-                  <Truck className="w-3 h-3" />
+                  <Truck className="w-3 h-3 shrink-0" />
                   <span>{storeStatus.delivery_time_minutes}'</span>
                 </div>
                 <span className="text-border">|</span>
                 <div className="flex items-center gap-0.5" title="Retirada">
-                  <Clock className="w-3 h-3" />
+                  <Clock className="w-3 h-3 shrink-0" />
                   <span>{storeStatus.pickup_time_minutes}'</span>
                 </div>
                 {storeStatus.minimum_order > 0 && (
                   <>
                     <span className="text-border">|</span>
-                    <span>Mín R${storeStatus.minimum_order}</span>
+                    <span className="whitespace-nowrap">Mín R${storeStatus.minimum_order}</span>
                   </>
                 )}
               </div>
             </>
           )}
+        </div>
+
+        <div className="flex items-center gap-1 sm:gap-2">
 
           {user ? (
             <Button
