@@ -62,6 +62,11 @@ const Header = ({ onCartClick }: HeaderProps) => {
                     <span>Mín R${storeStatus.minimum_order}</span>
                   </div>
                 )}
+                {storeStatus.delivery_fee > 0 && (
+                  <div className="flex items-center gap-1" title="Taxa de entrega">
+                    <span>Taxa R${storeStatus.delivery_fee}</span>
+                  </div>
+                )}
               </div>
               {/* Mobile view - compact */}
               <div className="flex sm:hidden items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -78,6 +83,12 @@ const Header = ({ onCartClick }: HeaderProps) => {
                   <>
                     <span className="text-border">|</span>
                     <span className="whitespace-nowrap">Mín R${storeStatus.minimum_order}</span>
+                  </>
+                )}
+                {storeStatus.delivery_fee > 0 && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span className="whitespace-nowrap">Taxa R${storeStatus.delivery_fee}</span>
                   </>
                 )}
               </div>

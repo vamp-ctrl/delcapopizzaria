@@ -7,6 +7,7 @@ import Chat from '@/components/Chat';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import InfoButton from '@/components/InfoButton';
 import Footer from '@/components/Footer';
+import OrderTracker from '@/components/OrderTracker';
 
 const Index = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -14,6 +15,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header onCartClick={() => setIsCartOpen(true)} />
+      <OrderTracker />
       <main className="pt-16">
         <Hero />
         <Menu />

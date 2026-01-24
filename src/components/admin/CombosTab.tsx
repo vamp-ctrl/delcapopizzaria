@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Plus, Trash2, Pencil, Loader2 } from 'lucide-react';
+import { Package, Plus, Trash2, Pencil, Loader2, CheckSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ComboItem {
   id?: string;
@@ -333,9 +334,28 @@ const CombosTab = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Itens do Combo</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                    <Plus className="w-4 h-4 mr-1" /> Adicionar Item
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        // Add all products at once
+                        const newItems = products.map(p => ({
+                          product_id: p.id,
+                          product_name: p.name,
+                          quantity: 1,
+                        }));
+                        setItems(newItems);
+                        toast.success('Todos os produtos adicionados!');
+                      }}
+                    >
+                      <CheckSquare className="w-4 h-4 mr-1" /> Selecionar Tudo
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                      <Plus className="w-4 h-4 mr-1" /> Adicionar Item
+                    </Button>
+                  </div>
                 </div>
 
                 {items.map((item, index) => (

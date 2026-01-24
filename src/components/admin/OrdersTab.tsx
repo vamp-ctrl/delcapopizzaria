@@ -443,7 +443,7 @@ const OrdersTab = () => {
         <div class="footer center">
           <div>Obrigado pela preferencia!</div>
           <div style="margin-top: 6px;">Del Capo Pizzaria</div>
-          <div>(69) 99361-8962</div>
+          <div>+55 (69) 9 9251-7150</div>
         </div>
         
         <script>
