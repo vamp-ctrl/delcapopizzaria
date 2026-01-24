@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Pizza } from 'lucide-react';
+import { Search, Pizza, Package } from 'lucide-react';
 import { useDrinks } from '@/hooks/useDrinks';
+import { useCombos } from '@/hooks/useCombos';
 import { PizzaSize } from '@/types/menu';
 import SizeCard from './SizeCard';
 import DrinkCard from './DrinkCard';
+import ComboCard from './ComboCard';
 import FlavorSelector from './FlavorSelector';
 import { Input } from '@/components/ui/input';
 
@@ -20,7 +22,8 @@ const Menu = () => {
   const [showFlavorSelector, setShowFlavorSelector] = useState(false);
   const [selectedSize, setSelectedSize] = useState<PizzaSize>('M');
   
-  const { refrigerantes, sucos, loading } = useDrinks();
+  const { refrigerantes, sucos, loading: drinksLoading } = useDrinks();
+  const { combos, loading: combosLoading } = useCombos();
 
   const filteredRefrigerantes = refrigerantes.filter(drink =>
     drink.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -68,6 +71,22 @@ const Menu = () => {
           </div>
         </motion.div>
 
+        {/* Combos Section */}
+        {!combosLoading && combos.length > 0 && (
+          <div className="mb-16">
+            <h3 className="font-display text-2xl font-semibold text-primary mb-6 flex items-center gap-2">
+              <span className="w-8 h-1 bg-primary rounded-full"></span>
+              <Package className="w-6 h-6" />
+              Combos Promocionais
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {combos.map((combo, index) => (
+                <ComboCard key={combo.id} combo={combo} index={index} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Pizza Sizes */}
         <div className="mb-16">
           <h3 className="font-display text-2xl font-semibold text-primary mb-6 flex items-center gap-2">
@@ -95,7 +114,7 @@ const Menu = () => {
             Bebidas
           </h3>
           
-          {loading ? (
+          {drinksLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             </div>
