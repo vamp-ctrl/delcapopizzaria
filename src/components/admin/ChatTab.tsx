@@ -72,6 +72,29 @@ const ChatTab = () => {
       return;
     }
 
+    // Get unique customer IDs
+    const customerIds = [...new Set(
+      (data || [])
+        .filter(m => m.sender_type === 'customer')
+        .map(m => m.sender_id)
+    )];
+
+    // Fetch customer names from profiles
+    let customerNames: Record<string, string> = {};
+    if (customerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, name')
+        .in('user_id', customerIds);
+      
+      if (profiles) {
+        customerNames = profiles.reduce((acc, p) => {
+          acc[p.user_id] = p.name || `Cliente ${p.user_id.slice(0, 8)}`;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+    }
+
     // Group messages by sender_id (customer)
     const grouped = (data || []).reduce((acc, msg) => {
       const key = msg.sender_type === 'customer' ? msg.sender_id : 
@@ -92,7 +115,7 @@ const ChatTab = () => {
       
       return {
         sender_id: senderId,
-        customer_name: `Cliente ${senderId.slice(0, 8)}`,
+        customer_name: customerNames[senderId] || `Cliente ${senderId.slice(0, 8)}`,
         lastMessage: lastMsg.message,
         lastTime: lastMsg.created_at,
         unreadCount: customerMessages.filter(m => !m.is_read).length,
