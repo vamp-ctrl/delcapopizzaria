@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Store, Power, Clock, Calendar } from 'lucide-react';
+import { Store, Power, Clock, Calendar, Truck, Package, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,9 @@ interface StoreSettings {
   close_time: string;
   closed_days: number[];
   manual_override: boolean;
+  delivery_time_minutes: number;
+  pickup_time_minutes: number;
+  minimum_order: number;
 }
 
 const DAYS_OF_WEEK = [
@@ -227,11 +230,82 @@ const StoreSettingsTab = () => {
         </p>
       </motion.div>
 
-      {/* Auto Mode */}
+      {/* Delivery & Pickup Times */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
+        className="p-4 rounded-xl border border-border bg-card space-y-4"
+      >
+        <div className="flex items-center gap-2">
+          <Truck className="w-5 h-5 text-primary" />
+          <h3 className="font-semibold">Tempos e Pedido Mínimo</h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="delivery_time" className="flex items-center gap-2">
+              <Truck className="w-4 h-4" /> Tempo de entrega
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="delivery_time"
+                type="number"
+                min="1"
+                value={settings.delivery_time_minutes}
+                onChange={(e) => updateSettings({ delivery_time_minutes: parseInt(e.target.value) || 45 })}
+                className="w-20"
+              />
+              <span className="text-sm text-muted-foreground">minutos</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pickup_time" className="flex items-center gap-2">
+              <Package className="w-4 h-4" /> Tempo de retirada
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="pickup_time"
+                type="number"
+                min="1"
+                value={settings.pickup_time_minutes}
+                onChange={(e) => updateSettings({ pickup_time_minutes: parseInt(e.target.value) || 20 })}
+                className="w-20"
+              />
+              <span className="text-sm text-muted-foreground">minutos</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="minimum_order" className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" /> Pedido mínimo
+            </Label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">R$</span>
+              <Input
+                id="minimum_order"
+                type="number"
+                min="0"
+                step="0.01"
+                value={settings.minimum_order}
+                onChange={(e) => updateSettings({ minimum_order: parseFloat(e.target.value) || 0 })}
+                className="w-24"
+              />
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Esses valores serão exibidos para os clientes no checkout
+        </p>
+      </motion.div>
+
+      {/* Auto Mode */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
         className="p-4 rounded-xl border border-border bg-card"
       >
         <div className="flex items-center justify-between">
