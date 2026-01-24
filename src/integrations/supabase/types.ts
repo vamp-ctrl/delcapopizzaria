@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      border_options: {
+        Row: {
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+        }
+        Insert: {
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number
+        }
+        Update: {
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -82,6 +106,123 @@ export type Database = {
           },
         ]
       }
+      combo_items: {
+        Row: {
+          combo_id: string
+          id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+        }
+        Insert: {
+          combo_id: string
+          id?: string
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+        }
+        Update: {
+          combo_id?: string
+          id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_items_combo_id_fkey"
+            columns: ["combo_id"]
+            isOneToOne: false
+            referencedRelation: "combos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combos: {
+        Row: {
+          combo_price: number
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          regular_price: number
+          updated_at: string
+        }
+        Insert: {
+          combo_price: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          regular_price: number
+          updated_at?: string
+        }
+        Update: {
+          combo_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          regular_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_order_value: number | null
+          updated_at: string
+          uses_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_type: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_value?: number | null
+          updated_at?: string
+          uses_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_value?: number | null
+          updated_at?: string
+          uses_count?: number | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           id: string
@@ -135,11 +276,13 @@ export type Database = {
       }
       orders: {
         Row: {
+          coupon_code: string | null
           created_at: string
           customer_address: string | null
           customer_name: string
           customer_phone: string
           delivery_fee: number
+          discount_amount: number | null
           id: string
           notes: string | null
           payment_id: string | null
@@ -153,11 +296,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          coupon_code?: string | null
           created_at?: string
           customer_address?: string | null
           customer_name: string
           customer_phone: string
           delivery_fee?: number
+          discount_amount?: number | null
           id?: string
           notes?: string | null
           payment_id?: string | null
@@ -171,11 +316,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          coupon_code?: string | null
           created_at?: string
           customer_address?: string | null
           customer_name?: string
           customer_phone?: string
           delivery_fee?: number
+          discount_amount?: number | null
           id?: string
           notes?: string | null
           payment_id?: string | null

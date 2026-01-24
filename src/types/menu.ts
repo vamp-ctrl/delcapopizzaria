@@ -19,12 +19,53 @@ export interface Drink {
 
 export interface CartItem {
   id: string;
-  type: 'pizza' | 'drink';
+  type: 'pizza' | 'drink' | 'combo';
   name: string;
   size?: PizzaSize | string;
   price: number;
   quantity: number;
-  flavors?: string[]; // Added for pizza flavors
+  flavors?: string[];
+  border?: string;
+  borderPrice?: number;
+}
+
+export interface BorderOption {
+  id: string;
+  name: string;
+  price: number;
+  is_active: boolean;
+  display_order: number;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  min_order_value: number;
+  max_uses: number | null;
+  uses_count: number;
+  is_active: boolean;
+  expires_at: string | null;
+}
+
+export interface Combo {
+  id: string;
+  name: string;
+  description: string | null;
+  regular_price: number;
+  combo_price: number;
+  is_active: boolean;
+  image_url: string | null;
+  items?: ComboItem[];
+}
+
+export interface ComboItem {
+  id: string;
+  combo_id: string;
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
 }
 
 export const MAX_FLAVORS: Record<PizzaSize, number> = {
