@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, User, Phone, CreditCard, QrCode, Loader2, Store, Truck } from 'lucide-react';
+import { ArrowLeft, MapPin, User, Phone, CreditCard, QrCode, Loader2, Store, Truck, Tag, X, Check } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,18 @@ interface StoreStatus {
   delivery_fee: number;
 }
 
+interface Coupon {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  min_order_value: number;
+  max_uses: number | null;
+  uses_count: number;
+  is_active: boolean;
+  expires_at: string | null;
+}
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, total, clearCart } = useCart();
@@ -51,12 +63,29 @@ const Checkout = () => {
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [notes, setNotes] = useState('');
+  
+  // Coupon state
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
 
   const deliveryFee = deliveryType === 'delivery' ? storeStatus.delivery_fee : 0;
-  const finalTotal = total + deliveryFee;
+  
+  // Calculate discount
+  const calculateDiscount = (coupon: Coupon | null, subtotal: number): number => {
+    if (!coupon) return 0;
+    if (coupon.discount_type === 'percentage') {
+      return (subtotal * coupon.discount_value) / 100;
+    }
+    return coupon.discount_value;
+  };
+  
+  const discountAmount = calculateDiscount(appliedCoupon, total);
+  const finalTotal = Math.max(0, total - discountAmount + deliveryFee);
   const meetsMinimumOrder = total >= storeStatus.minimum_order;
 
-  // Check store status
+  // Check store status and fetch coupons
   useEffect(() => {
     const fetchStoreStatus = async () => {
       const { data } = await supabase
@@ -73,7 +102,31 @@ const Checkout = () => {
         });
       }
     };
+    
+    const fetchCoupons = async () => {
+      setLoadingCoupons(true);
+      const { data } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (data) {
+        // Filter coupons that meet requirements
+        const now = new Date();
+        const validCoupons = data.filter(coupon => {
+          // Check expiration
+          if (coupon.expires_at && new Date(coupon.expires_at) < now) return false;
+          // Check usage limit
+          if (coupon.max_uses && coupon.uses_count >= coupon.max_uses) return false;
+          return true;
+        });
+        setAvailableCoupons(validCoupons);
+      }
+      setLoadingCoupons(false);
+    };
+    
     fetchStoreStatus();
+    fetchCoupons();
   }, []);
 
   useEffect(() => {
@@ -105,6 +158,27 @@ const Checkout = () => {
 
     fetchProfile();
   }, [user, items, navigate]);
+
+  // Check if coupon meets order requirements
+  const isCouponValid = (coupon: Coupon): boolean => {
+    if (coupon.min_order_value && total < coupon.min_order_value) return false;
+    return true;
+  };
+
+  const applyCoupon = (coupon: Coupon) => {
+    if (!isCouponValid(coupon)) {
+      toast.error(`Pedido mínimo de R$ ${coupon.min_order_value?.toFixed(2)} para usar este cupom`);
+      return;
+    }
+    setAppliedCoupon(coupon);
+    setCouponCode(coupon.code);
+    toast.success(`Cupom "${coupon.code}" aplicado!`);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +212,8 @@ const Checkout = () => {
           customer_address: deliveryType === 'delivery' ? customerAddress : null,
           subtotal: total,
           delivery_fee: deliveryFee,
+          discount_amount: discountAmount,
+          coupon_code: appliedCoupon?.code || null,
           total: finalTotal,
           notes: notes || null,
           status: 'pending',
@@ -148,7 +224,15 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
-      // 2. Create order items
+      // 2. Update coupon usage count
+      if (appliedCoupon) {
+        await supabase
+          .from('coupons')
+          .update({ uses_count: appliedCoupon.uses_count + 1 })
+          .eq('id', appliedCoupon.id);
+      }
+
+      // 3. Create order items
       const orderItems = items.map(item => ({
         order_id: order.id,
         product_name: item.name,
@@ -165,7 +249,7 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      // 3. Try to create payment with Mercado Pago
+      // 4. Try to create payment with Mercado Pago
       try {
         const response = await supabase.functions.invoke('create-payment', {
           body: {
@@ -210,6 +294,9 @@ const Checkout = () => {
     return null;
   }
 
+  // Filter coupons that can be used with current order
+  const usableCoupons = availableCoupons.filter(isCouponValid);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -236,6 +323,11 @@ const Checkout = () => {
                 <div key={item.id} className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
                     {item.quantity}x {item.name}
+                    {item.flavors && item.flavors.length > 0 && (
+                      <span className="text-xs block text-muted-foreground/70">
+                        ({item.flavors.join(', ')})
+                      </span>
+                    )}
                   </span>
                   <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
                 </div>
@@ -245,6 +337,15 @@ const Checkout = () => {
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>R$ {total.toFixed(2)}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
+                      Desconto ({appliedCoupon?.code})
+                    </span>
+                    <span>-R$ {discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Taxa de entrega</span>
                   <span>{deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2)}` : 'Grátis'}</span>
@@ -310,7 +411,7 @@ const Checkout = () => {
                   <div>
                     <p className="font-medium">Entrega</p>
                     <p className="text-xs text-muted-foreground">
-                      R$ 5,00 • ~{storeStatus.delivery_time_minutes} min
+                      R$ {storeStatus.delivery_fee.toFixed(2)} • ~{storeStatus.delivery_time_minutes} min
                     </p>
                   </div>
                 </Label>
@@ -392,6 +493,67 @@ const Checkout = () => {
             </RadioGroup>
           </motion.section>
 
+          {/* Coupons Section */}
+          {usableCoupons.length > 0 && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              className="p-4 rounded-xl bg-card border border-border space-y-4"
+            >
+              <h2 className="font-semibold text-lg flex items-center gap-2">
+                <Tag className="w-5 h-5 text-primary" />
+                Cupons Disponíveis
+              </h2>
+              
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-green-800">{appliedCoupon.code}</p>
+                      <p className="text-xs text-green-600">
+                        {appliedCoupon.discount_type === 'percentage' 
+                          ? `${appliedCoupon.discount_value}% de desconto`
+                          : `R$ ${appliedCoupon.discount_value.toFixed(2)} de desconto`}
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={removeCoupon}
+                    className="text-green-700 hover:text-green-900"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {usableCoupons.map(coupon => (
+                    <button
+                      key={coupon.id}
+                      type="button"
+                      onClick={() => applyCoupon(coupon)}
+                      className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 transition-all flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-semibold text-foreground">{coupon.code}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {coupon.discount_type === 'percentage' 
+                            ? `${coupon.discount_value}% de desconto`
+                            : `R$ ${coupon.discount_value.toFixed(2)} de desconto`}
+                          {coupon.min_order_value > 0 && ` (mín. R$ ${coupon.min_order_value.toFixed(2)})`}
+                        </p>
+                      </div>
+                      <span className="text-xs text-primary font-medium">Aplicar</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.section>
+          )}
+
           {/* Notes */}
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -415,14 +577,14 @@ const Checkout = () => {
           >
             {!storeStatus.is_open && (
               <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-center mb-4">
-                <p className="text-destructive font-medium">🚫 Loja fechada no momento</p>
+                <p className="text-destructive font-medium">Loja fechada no momento</p>
                 <p className="text-sm text-muted-foreground">Volte durante nosso horário de funcionamento</p>
               </div>
             )}
 
             {storeStatus.minimum_order > 0 && !meetsMinimumOrder && (
               <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center mb-4">
-                <p className="text-amber-600 font-medium">⚠️ Pedido mínimo: R$ {storeStatus.minimum_order.toFixed(2)}</p>
+                <p className="text-amber-600 font-medium">Pedido mínimo: R$ {storeStatus.minimum_order.toFixed(2)}</p>
                 <p className="text-sm text-muted-foreground">
                   Adicione mais R$ {(storeStatus.minimum_order - total).toFixed(2)} ao seu pedido
                 </p>
