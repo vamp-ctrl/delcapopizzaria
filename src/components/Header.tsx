@@ -55,28 +55,49 @@ const Header = ({ onCartClick }: HeaderProps) => {
           <OpenStatus />
           
           {storeStatus && (
-            <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1" title="Tempo de entrega">
-                <Truck className="w-3.5 h-3.5" />
-                <span>{storeStatus.delivery_time_minutes}min</span>
-              </div>
-              <div className="flex items-center gap-1" title="Tempo de retirada">
-                <Clock className="w-3.5 h-3.5" />
-                <span>{storeStatus.pickup_time_minutes}min</span>
-              </div>
-              {storeStatus.delivery_fee > 0 && (
-                <div className="flex items-center gap-1" title="Taxa de entrega">
+            <>
+              {/* Desktop view */}
+              <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1" title="Tempo de entrega">
                   <Truck className="w-3.5 h-3.5" />
-                  <span>R${storeStatus.delivery_fee}</span>
+                  <span>{storeStatus.delivery_time_minutes}min</span>
                 </div>
-              )}
-              {storeStatus.minimum_order > 0 && (
-                <div className="flex items-center gap-1" title="Pedido mínimo">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <span>Mín R${storeStatus.minimum_order}</span>
+                <div className="flex items-center gap-1" title="Tempo de retirada">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{storeStatus.pickup_time_minutes}min</span>
                 </div>
-              )}
-            </div>
+                {storeStatus.delivery_fee > 0 && (
+                  <div className="flex items-center gap-1" title="Taxa de entrega">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>R${storeStatus.delivery_fee}</span>
+                  </div>
+                )}
+                {storeStatus.minimum_order > 0 && (
+                  <div className="flex items-center gap-1" title="Pedido mínimo">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    <span>Mín R${storeStatus.minimum_order}</span>
+                  </div>
+                )}
+              </div>
+              {/* Mobile view - compact */}
+              <div className="flex sm:hidden items-center gap-2 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-0.5" title="Entrega">
+                  <Truck className="w-3 h-3" />
+                  <span>{storeStatus.delivery_time_minutes}'</span>
+                </div>
+                <span className="text-border">|</span>
+                <div className="flex items-center gap-0.5" title="Retirada">
+                  <Clock className="w-3 h-3" />
+                  <span>{storeStatus.pickup_time_minutes}'</span>
+                </div>
+                {storeStatus.minimum_order > 0 && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span>Mín R${storeStatus.minimum_order}</span>
+                  </>
+                )}
+              </div>
+            </>
           )}
 
           {user ? (

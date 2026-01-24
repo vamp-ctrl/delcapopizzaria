@@ -1,10 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardList, Pizza, GlassWater, MessageCircle, Settings } from 'lucide-react';
+import { ClipboardList, Pizza, GlassWater, MessageCircle, Settings, Ticket, Package } from 'lucide-react';
 import OrdersTab from './OrdersTab';
 import PizzaFlavorsTab from './PizzaFlavorsTab';
 import DrinksTab from './DrinksTab';
 import ChatTab from './ChatTab';
 import StoreSettingsTab from './StoreSettingsTab';
+import CouponsTab from './CouponsTab';
+import CombosTab from './CombosTab';
 
 const AdminTabs = () => {
   return (
@@ -21,6 +23,14 @@ const AdminTabs = () => {
         <TabsTrigger value="drinks" className="flex items-center gap-2 data-[state=active]:bg-background">
           <GlassWater className="w-4 h-4" />
           <span className="hidden sm:inline">Bebidas</span>
+        </TabsTrigger>
+        <TabsTrigger value="combos" className="flex items-center gap-2 data-[state=active]:bg-background">
+          <Package className="w-4 h-4" />
+          <span className="hidden sm:inline">Combos</span>
+        </TabsTrigger>
+        <TabsTrigger value="coupons" className="flex items-center gap-2 data-[state=active]:bg-background">
+          <Ticket className="w-4 h-4" />
+          <span className="hidden sm:inline">Cupons</span>
         </TabsTrigger>
         <TabsTrigger value="chat" className="flex items-center gap-2 data-[state=active]:bg-background">
           <MessageCircle className="w-4 h-4" />
@@ -42,6 +52,14 @@ const AdminTabs = () => {
 
       <TabsContent value="drinks" className="mt-4">
         <DrinksTab />
+      </TabsContent>
+
+      <TabsContent value="combos" className="mt-4">
+        <CombosTab />
+      </TabsContent>
+
+      <TabsContent value="coupons" className="mt-4">
+        <CouponsTab />
       </TabsContent>
 
       <TabsContent value="chat" className="mt-4">

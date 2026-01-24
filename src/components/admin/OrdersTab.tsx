@@ -93,12 +93,55 @@ const OrdersTab = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showHistory, setShowHistory] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingOrdersRef = useRef<Set<string>>(new Set());
+  const notificationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get orders from last 24 hours for the main view
   const getRecentOrders = (allOrders: Order[]) => {
     const twentyFourHoursAgo = subHours(new Date(), 24);
     return allOrders.filter(order => new Date(order.created_at) >= twentyFourHoursAgo);
   };
+
+  // Play notification sound
+  const playNotification = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    }
+  };
+
+  // Setup repeating notification for pending orders
+  useEffect(() => {
+    const pendingOrders = orders.filter(o => o.status === 'pending');
+    
+    // Update pending orders set
+    pendingOrdersRef.current = new Set(pendingOrders.map(o => o.id));
+
+    // Clear existing interval
+    if (notificationIntervalRef.current) {
+      clearInterval(notificationIntervalRef.current);
+      notificationIntervalRef.current = null;
+    }
+
+    // If there are pending orders, play sound every 60 seconds
+    if (pendingOrders.length > 0) {
+      notificationIntervalRef.current = setInterval(() => {
+        // Check if there are still pending orders
+        if (pendingOrdersRef.current.size > 0) {
+          playNotification();
+          toast.warning(`🔔 ${pendingOrdersRef.current.size} pedido(s) aguardando!`, {
+            description: 'Clique para aceitar',
+          });
+        }
+      }, 60000); // 60 seconds
+    }
+
+    return () => {
+      if (notificationIntervalRef.current) {
+        clearInterval(notificationIntervalRef.current);
+      }
+    };
+  }, [orders]);
 
   useEffect(() => {
     // Preload notification sound
@@ -146,10 +189,7 @@ const OrdersTab = () => {
                 description: `${data.customer_name} - R$ ${data.total.toFixed(2)}`,
               });
               // Play notification sound
-              if (audioRef.current) {
-                audioRef.current.currentTime = 0;
-                audioRef.current.play().catch(() => {});
-              }
+              playNotification();
             }
           } else if (payload.eventType === 'UPDATE') {
             setOrders(prev => 
@@ -168,6 +208,9 @@ const OrdersTab = () => {
 
     return () => {
       supabase.removeChannel(channel);
+      if (notificationIntervalRef.current) {
+        clearInterval(notificationIntervalRef.current);
+      }
     };
   }, []);
 

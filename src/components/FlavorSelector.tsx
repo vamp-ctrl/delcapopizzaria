@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import BorderSelector from './BorderSelector';
 
 interface FlavorSelectorProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ const SIZE_LABELS: Record<PizzaSize, string> = {
 
 const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) => {
   const [selectedFlavors, setSelectedFlavors] = useState<Pizza[]>([]);
+  const [selectedBorder, setSelectedBorder] = useState<{ name: string; price: number } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { addItem } = useCart();
   const { pizzasSalgadas, pizzasDoces, loading } = usePizzas();
@@ -57,7 +59,8 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
     const premiumTotal = selectedFlavors
       .filter(f => f.isPremium)
       .reduce((sum, f) => sum + (f.premiumPrice || 0), 0);
-    return basePrice + premiumTotal;
+    const borderPrice = selectedBorder?.price || 0;
+    return basePrice + premiumTotal + borderPrice;
   };
 
   const getPremiumTotal = () => {
@@ -74,24 +77,29 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
 
     const flavorNames = selectedFlavors.map(f => f.name);
     const price = calculatePrice();
+    const borderName = selectedBorder?.name !== 'Sem borda' ? selectedBorder?.name : undefined;
     
     addItem({
       id: `pizza-${selectedSize}-${Date.now()}`,
       type: 'pizza',
-      name: `Pizza ${SIZE_LABELS[selectedSize]} (${selectedSize}) - ${flavorNames.join(' / ')}`,
+      name: `Pizza ${SIZE_LABELS[selectedSize]} (${selectedSize}) - ${flavorNames.join(' / ')}${borderName ? ` | Borda ${borderName}` : ''}`,
       size: selectedSize,
       price: price,
-      flavors: flavorNames
+      flavors: flavorNames,
+      border: borderName,
+      borderPrice: selectedBorder?.price || 0,
     });
 
     toast.success(`Pizza ${SIZE_LABELS[selectedSize]} adicionada ao carrinho!`);
     setSelectedFlavors([]);
+    setSelectedBorder(null);
     setSearchTerm('');
     onClose();
   };
 
   const handleClose = () => {
     setSelectedFlavors([]);
+    setSelectedBorder(null);
     setSearchTerm('');
     onClose();
   };
@@ -330,6 +338,14 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
               )}
             </div>
 
+            {/* Border Selector */}
+            <div className="p-4 border-t border-border bg-muted/30 shrink-0">
+              <BorderSelector
+                value={selectedBorder?.name || null}
+                onChange={setSelectedBorder}
+              />
+            </div>
+
             {/* Summary and Add to cart */}
             <div className="p-4 border-t border-border bg-background shrink-0 space-y-3">
               {/* Order Summary */}
@@ -338,6 +354,7 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
                   <p className="text-sm font-medium text-foreground">Resumo do pedido:</p>
                   <p className="text-xs text-muted-foreground">
                     Pizza {SIZE_LABELS[selectedSize]} ({selectedSize}) - {selectedFlavors.map(f => f.name).join(' / ')}
+                    {selectedBorder && selectedBorder.name !== 'Sem borda' && ` | Borda ${selectedBorder.name}`}
                   </p>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Preço base:</span>
@@ -347,6 +364,12 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
                     <div className="flex justify-between text-sm text-secondary">
                       <span>Sabores especiais:</span>
                       <span className="font-medium">+R$ {getPremiumTotal().toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedBorder && selectedBorder.price > 0 && (
+                    <div className="flex justify-between text-sm text-primary">
+                      <span>Borda {selectedBorder.name}:</span>
+                      <span className="font-medium">+R$ {selectedBorder.price.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
