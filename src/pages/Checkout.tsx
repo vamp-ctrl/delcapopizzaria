@@ -374,10 +374,12 @@ const Checkout = () => {
               <Input
                 id="name"
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                readOnly
+                disabled
+                className="bg-muted/50 cursor-not-allowed"
                 placeholder="Seu nome completo"
-                required
               />
+              <p className="text-xs text-muted-foreground">Nome cadastrado (não editável)</p>
             </div>
 
             <div className="space-y-2">
@@ -391,6 +393,21 @@ const Checkout = () => {
                 placeholder="(00) 00000-0000"
                 required
               />
+              <p className="text-xs text-muted-foreground">Edite se necessário</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address-info" className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" /> Endereço Cadastrado
+              </Label>
+              <Textarea
+                id="address-info"
+                value={customerAddress}
+                onChange={(e) => setCustomerAddress(e.target.value)}
+                placeholder="Rua, número, bairro, complemento..."
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">Edite se necessário</p>
             </div>
           </motion.section>
 
