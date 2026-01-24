@@ -300,30 +300,39 @@ export type Database = {
         Row: {
           close_time: string
           closed_days: number[] | null
+          delivery_time_minutes: number
           id: string
           is_open: boolean
           manual_override: boolean
+          minimum_order: number
           open_time: string
+          pickup_time_minutes: number
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           close_time?: string
           closed_days?: number[] | null
+          delivery_time_minutes?: number
           id?: string
           is_open?: boolean
           manual_override?: boolean
+          minimum_order?: number
           open_time?: string
+          pickup_time_minutes?: number
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           close_time?: string
           closed_days?: number[] | null
+          delivery_time_minutes?: number
           id?: string
           is_open?: boolean
           manual_override?: boolean
+          minimum_order?: number
           open_time?: string
+          pickup_time_minutes?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -356,26 +365,35 @@ export type Database = {
         Row: {
           close_time: string | null
           closed_days: number[] | null
+          delivery_time_minutes: number | null
           id: string | null
           is_open: boolean | null
           manual_override: boolean | null
+          minimum_order: number | null
           open_time: string | null
+          pickup_time_minutes: number | null
         }
         Insert: {
           close_time?: string | null
           closed_days?: number[] | null
+          delivery_time_minutes?: number | null
           id?: string | null
           is_open?: boolean | null
           manual_override?: boolean | null
+          minimum_order?: number | null
           open_time?: string | null
+          pickup_time_minutes?: number | null
         }
         Update: {
           close_time?: string | null
           closed_days?: number[] | null
+          delivery_time_minutes?: number | null
           id?: string | null
           is_open?: boolean | null
           manual_override?: boolean | null
+          minimum_order?: number | null
           open_time?: string | null
+          pickup_time_minutes?: number | null
         }
         Relationships: []
       }

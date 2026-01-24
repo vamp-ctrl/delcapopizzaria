@@ -21,6 +21,13 @@ interface Profile {
   address: string | null;
 }
 
+interface StoreStatus {
+  is_open: boolean;
+  delivery_time_minutes: number;
+  pickup_time_minutes: number;
+  minimum_order: number;
+}
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { items, total, clearCart } = useCart();
@@ -28,7 +35,12 @@ const Checkout = () => {
   
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [storeOpen, setStoreOpen] = useState(true);
+  const [storeStatus, setStoreStatus] = useState<StoreStatus>({
+    is_open: true,
+    delivery_time_minutes: 45,
+    pickup_time_minutes: 20,
+    minimum_order: 0,
+  });
   
   // Form state
   const [customerName, setCustomerName] = useState('');
@@ -40,14 +52,25 @@ const Checkout = () => {
 
   const deliveryFee = deliveryType === 'delivery' ? 5 : 0;
   const finalTotal = total + deliveryFee;
+  const meetsMinimumOrder = total >= storeStatus.minimum_order;
 
-  // Check if store is open
+  // Check store status
   useEffect(() => {
-    const checkStoreStatus = async () => {
-      const { data } = await supabase.from('store_settings').select('is_open').single();
-      if (data) setStoreOpen(data.is_open);
+    const fetchStoreStatus = async () => {
+      const { data } = await supabase
+        .from('store_status')
+        .select('is_open, delivery_time_minutes, pickup_time_minutes, minimum_order')
+        .single();
+      if (data) {
+        setStoreStatus({
+          is_open: data.is_open ?? true,
+          delivery_time_minutes: data.delivery_time_minutes ?? 45,
+          pickup_time_minutes: data.pickup_time_minutes ?? 20,
+          minimum_order: data.minimum_order ?? 0,
+        });
+      }
     };
-    checkStoreStatus();
+    fetchStoreStatus();
   }, []);
 
   useEffect(() => {
@@ -283,7 +306,9 @@ const Checkout = () => {
                   <Truck className="w-5 h-5 text-primary" />
                   <div>
                     <p className="font-medium">Entrega</p>
-                    <p className="text-xs text-muted-foreground">R$ 5,00</p>
+                    <p className="text-xs text-muted-foreground">
+                      R$ 5,00 • ~{storeStatus.delivery_time_minutes} min
+                    </p>
                   </div>
                 </Label>
               </div>
@@ -293,7 +318,9 @@ const Checkout = () => {
                   <Store className="w-5 h-5 text-primary" />
                   <div>
                     <p className="font-medium">Retirada na loja</p>
-                    <p className="text-xs text-muted-foreground">Grátis</p>
+                    <p className="text-xs text-muted-foreground">
+                      Grátis • ~{storeStatus.pickup_time_minutes} min
+                    </p>
                   </div>
                 </Label>
               </div>
@@ -383,15 +410,25 @@ const Checkout = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            {!storeOpen && (
+            {!storeStatus.is_open && (
               <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-center mb-4">
                 <p className="text-destructive font-medium">🚫 Loja fechada no momento</p>
                 <p className="text-sm text-muted-foreground">Volte durante nosso horário de funcionamento</p>
               </div>
             )}
+
+            {storeStatus.minimum_order > 0 && !meetsMinimumOrder && (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-center mb-4">
+                <p className="text-amber-600 font-medium">⚠️ Pedido mínimo: R$ {storeStatus.minimum_order.toFixed(2)}</p>
+                <p className="text-sm text-muted-foreground">
+                  Adicione mais R$ {(storeStatus.minimum_order - total).toFixed(2)} ao seu pedido
+                </p>
+              </div>
+            )}
+
             <Button
               type="submit"
-              disabled={loading || !storeOpen}
+              disabled={loading || !storeStatus.is_open || !meetsMinimumOrder}
               className="w-full h-14 text-lg font-semibold"
               size="lg"
             >
