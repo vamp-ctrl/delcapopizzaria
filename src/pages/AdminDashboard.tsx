@@ -51,8 +51,60 @@ const AdminDashboard = () => {
     );
   }
 
-  // Show login form if not logged in or not admin
-  if (!user || !isAdmin) {
+  // If user is logged in but not admin, show access denied
+  if (user && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <div className="bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-destructive/10 p-6 text-center">
+              <div className="w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-8 h-8 text-destructive" />
+              </div>
+              <h1 className="text-2xl font-display font-bold text-foreground">
+                Acesso Restrito
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Esta área é exclusiva para administradores
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-center text-sm text-muted-foreground">
+                Você está logado como <strong>{user.email}</strong>, mas esta conta não possui permissões de administrador.
+              </p>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.location.href = '/'}
+                >
+                  Voltar para a loja
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  onClick={async () => {
+                    await signOut();
+                    setEmail('');
+                    setPassword('');
+                  }}
+                >
+                  Fazer login com outra conta
+                </Button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Show login form if not logged in
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-primary/10 to-background flex items-center justify-center p-4">
         <motion.div
@@ -70,18 +122,12 @@ const AdminDashboard = () => {
                 Painel Administrativo
               </h1>
               <p className="text-primary-foreground/80 text-sm mt-1">
-                Del Capone Pizzaria
+                Del Capo Pizzaria
               </p>
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleLogin} className="p-6 space-y-4">
-              {user && !isAdmin && (
-                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive text-center">
-                  Esta conta não tem permissão de administrador
-                </div>
-              )}
-
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -130,17 +176,6 @@ const AdminDashboard = () => {
                 )}
                 Entrar
               </Button>
-
-              {user && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => signOut()}
-                >
-                  Sair da conta atual
-                </Button>
-              )}
             </form>
           </div>
         </motion.div>

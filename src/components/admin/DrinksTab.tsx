@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, GlassWater, Check, X, Coffee, Wine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { drinks as initialDrinks } from '@/data/menu';
-import { Drink } from '@/types/menu';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -24,16 +23,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface EditableDrink extends Drink {
-  isActive: boolean;
+interface DbDrink {
+  id: string;
+  name: string;
+  base_price: number;
+  is_active: boolean;
+  drink_type: string | null;
+  size_label: string | null;
 }
 
+const DRINKS_CATEGORY_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
 const DrinksTab = () => {
-  const [drinkList, setDrinkList] = useState<EditableDrink[]>(
-    initialDrinks.map(d => ({ ...d, isActive: true }))
-  );
+  const [drinkList, setDrinkList] = useState<DbDrink[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingDrink, setEditingDrink] = useState<EditableDrink | null>(null);
+  const [editingDrink, setEditingDrink] = useState<DbDrink | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: 'refrigerante' as 'refrigerante' | 'suco',
@@ -41,14 +46,34 @@ const DrinksTab = () => {
     size: '',
   });
 
-  const handleOpenDialog = (drink?: EditableDrink) => {
+  const fetchDrinks = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, base_price, is_active, drink_type, size_label')
+      .eq('category_id', DRINKS_CATEGORY_ID)
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching drinks:', error);
+      toast.error('Erro ao carregar bebidas');
+    } else {
+      setDrinkList(data || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchDrinks();
+  }, []);
+
+  const handleOpenDialog = (drink?: DbDrink) => {
     if (drink) {
       setEditingDrink(drink);
       setFormData({
         name: drink.name,
-        type: drink.type,
-        price: drink.price,
-        size: drink.size,
+        type: (drink.drink_type as 'refrigerante' | 'suco') || 'refrigerante',
+        price: drink.base_price,
+        size: drink.size_label || '',
       });
     } else {
       setEditingDrink(null);
@@ -62,49 +87,84 @@ const DrinksTab = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim() || !formData.size.trim() || formData.price <= 0) {
       toast.error('Preencha todos os campos corretamente');
       return;
     }
 
+    const productData = {
+      name: formData.name,
+      base_price: formData.price,
+      drink_type: formData.type,
+      size_label: formData.size,
+      category_id: DRINKS_CATEGORY_ID,
+      is_active: true,
+    };
+
     if (editingDrink) {
-      setDrinkList(prev =>
-        prev.map(d =>
-          d.id === editingDrink.id
-            ? { ...d, ...formData }
-            : d
-        )
-      );
-      toast.success('Bebida atualizada com sucesso!');
+      const { error } = await supabase
+        .from('products')
+        .update(productData)
+        .eq('id', editingDrink.id);
+
+      if (error) {
+        toast.error('Erro ao atualizar bebida');
+        console.error(error);
+      } else {
+        toast.success('Bebida atualizada com sucesso!');
+        fetchDrinks();
+      }
     } else {
-      const newDrink: EditableDrink = {
-        id: `drink-${Date.now()}`,
-        ...formData,
-        isActive: true,
-      };
-      setDrinkList(prev => [...prev, newDrink]);
-      toast.success('Bebida adicionada com sucesso!');
+      const { error } = await supabase
+        .from('products')
+        .insert(productData);
+
+      if (error) {
+        toast.error('Erro ao adicionar bebida');
+        console.error(error);
+      } else {
+        toast.success('Bebida adicionada com sucesso!');
+        fetchDrinks();
+      }
     }
 
     setIsDialogOpen(false);
   };
 
-  const handleToggleActive = (id: string) => {
-    setDrinkList(prev =>
-      prev.map(d => (d.id === id ? { ...d, isActive: !d.isActive } : d))
-    );
+  const handleToggleActive = async (drink: DbDrink) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ is_active: !drink.is_active })
+      .eq('id', drink.id);
+
+    if (error) {
+      toast.error('Erro ao alterar status');
+      console.error(error);
+    } else {
+      fetchDrinks();
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setDrinkList(prev => prev.filter(d => d.id !== id));
-    toast.success('Bebida removida com sucesso!');
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Erro ao remover bebida');
+      console.error(error);
+    } else {
+      toast.success('Bebida removida com sucesso!');
+      fetchDrinks();
+    }
   };
 
-  const refrigerantes = drinkList.filter(d => d.type === 'refrigerante');
-  const sucos = drinkList.filter(d => d.type === 'suco');
+  const refrigerantes = drinkList.filter(d => d.drink_type === 'refrigerante');
+  const sucos = drinkList.filter(d => d.drink_type === 'suco');
 
-  const DrinkSection = ({ title, icon: Icon, drinks }: { title: string; icon: typeof GlassWater; drinks: EditableDrink[] }) => (
+  const DrinkSection = ({ title, icon: Icon, drinks }: { title: string; icon: typeof GlassWater; drinks: DbDrink[] }) => (
     <div className="space-y-3">
       <h3 className="font-medium flex items-center gap-2 text-muted-foreground">
         <Icon className="w-4 h-4" />
@@ -120,7 +180,7 @@ const DrinksTab = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ delay: index * 0.03 }}
               className={`p-3 rounded-lg border flex items-center justify-between ${
-                drink.isActive
+                drink.is_active
                   ? 'bg-card border-border'
                   : 'bg-muted/50 border-muted opacity-60'
               }`}
@@ -128,15 +188,15 @@ const DrinksTab = () => {
               <div className="flex items-center gap-3">
                 <div>
                   <p className="font-medium">{drink.name}</p>
-                  <p className="text-xs text-muted-foreground">{drink.size}</p>
+                  <p className="text-xs text-muted-foreground">{drink.size_label}</p>
                 </div>
-                <Badge variant="outline">R$ {drink.price.toFixed(2)}</Badge>
+                <Badge variant="outline">R$ {drink.base_price.toFixed(2)}</Badge>
               </div>
 
               <div className="flex items-center gap-2">
                 <Switch
-                  checked={drink.isActive}
-                  onCheckedChange={() => handleToggleActive(drink.id)}
+                  checked={drink.is_active}
+                  onCheckedChange={() => handleToggleActive(drink)}
                 />
                 <Button
                   variant="ghost"
@@ -160,6 +220,14 @@ const DrinksTab = () => {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

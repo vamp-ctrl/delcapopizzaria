@@ -228,10 +228,12 @@ export type Database = {
           category_id: string | null
           created_at: string
           description: string | null
+          drink_type: string | null
           id: string
           image_url: string | null
           is_active: boolean
           name: string
+          size_label: string | null
           updated_at: string
         }
         Insert: {
@@ -239,10 +241,12 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          drink_type?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           name: string
+          size_label?: string | null
           updated_at?: string
         }
         Update: {
@@ -250,10 +254,12 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           description?: string | null
+          drink_type?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           name?: string
+          size_label?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -300,6 +306,7 @@ export type Database = {
         Row: {
           close_time: string
           closed_days: number[] | null
+          delivery_fee: number
           delivery_time_minutes: number
           id: string
           is_open: boolean
@@ -313,6 +320,7 @@ export type Database = {
         Insert: {
           close_time?: string
           closed_days?: number[] | null
+          delivery_fee?: number
           delivery_time_minutes?: number
           id?: string
           is_open?: boolean
@@ -326,6 +334,7 @@ export type Database = {
         Update: {
           close_time?: string
           closed_days?: number[] | null
+          delivery_fee?: number
           delivery_time_minutes?: number
           id?: string
           is_open?: boolean
@@ -365,6 +374,7 @@ export type Database = {
         Row: {
           close_time: string | null
           closed_days: number[] | null
+          delivery_fee: number | null
           delivery_time_minutes: number | null
           id: string | null
           is_open: boolean | null
@@ -372,28 +382,6 @@ export type Database = {
           minimum_order: number | null
           open_time: string | null
           pickup_time_minutes: number | null
-        }
-        Insert: {
-          close_time?: string | null
-          closed_days?: number[] | null
-          delivery_time_minutes?: number | null
-          id?: string | null
-          is_open?: boolean | null
-          manual_override?: boolean | null
-          minimum_order?: number | null
-          open_time?: string | null
-          pickup_time_minutes?: number | null
-        }
-        Update: {
-          close_time?: string | null
-          closed_days?: number[] | null
-          delivery_time_minutes?: number | null
-          id?: string | null
-          is_open?: boolean | null
-          manual_override?: boolean | null
-          minimum_order?: number | null
-          open_time?: string | null
-          pickup_time_minutes?: number | null
         }
         Relationships: []
       }

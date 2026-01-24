@@ -20,6 +20,7 @@ interface StoreSettings {
   delivery_time_minutes: number;
   pickup_time_minutes: number;
   minimum_order: number;
+  delivery_fee: number;
 }
 
 const DAYS_OF_WEEK = [
@@ -239,10 +240,10 @@ const StoreSettingsTab = () => {
       >
         <div className="flex items-center gap-2">
           <Truck className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold">Tempos e Pedido Mínimo</h3>
+          <h3 className="font-semibold">Tempos, Taxa e Pedido Mínimo</h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="delivery_time" className="flex items-center gap-2">
               <Truck className="w-4 h-4" /> Tempo de entrega
@@ -274,6 +275,24 @@ const StoreSettingsTab = () => {
                 className="w-20"
               />
               <span className="text-sm text-muted-foreground">minutos</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="delivery_fee" className="flex items-center gap-2">
+              <Truck className="w-4 h-4" /> Taxa de entrega
+            </Label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">R$</span>
+              <Input
+                id="delivery_fee"
+                type="number"
+                min="0"
+                step="0.01"
+                value={settings.delivery_fee}
+                onChange={(e) => updateSettings({ delivery_fee: parseFloat(e.target.value) || 0 })}
+                className="w-24"
+              />
             </div>
           </div>
 

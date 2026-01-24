@@ -26,6 +26,7 @@ interface StoreStatus {
   delivery_time_minutes: number;
   pickup_time_minutes: number;
   minimum_order: number;
+  delivery_fee: number;
 }
 
 const Checkout = () => {
@@ -40,6 +41,7 @@ const Checkout = () => {
     delivery_time_minutes: 45,
     pickup_time_minutes: 20,
     minimum_order: 0,
+    delivery_fee: 5,
   });
   
   // Form state
@@ -50,7 +52,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [notes, setNotes] = useState('');
 
-  const deliveryFee = deliveryType === 'delivery' ? 5 : 0;
+  const deliveryFee = deliveryType === 'delivery' ? storeStatus.delivery_fee : 0;
   const finalTotal = total + deliveryFee;
   const meetsMinimumOrder = total >= storeStatus.minimum_order;
 
@@ -59,7 +61,7 @@ const Checkout = () => {
     const fetchStoreStatus = async () => {
       const { data } = await supabase
         .from('store_status')
-        .select('is_open, delivery_time_minutes, pickup_time_minutes, minimum_order')
+        .select('is_open, delivery_time_minutes, pickup_time_minutes, minimum_order, delivery_fee')
         .single();
       if (data) {
         setStoreStatus({
@@ -67,6 +69,7 @@ const Checkout = () => {
           delivery_time_minutes: data.delivery_time_minutes ?? 45,
           pickup_time_minutes: data.pickup_time_minutes ?? 20,
           minimum_order: data.minimum_order ?? 0,
+          delivery_fee: data.delivery_fee ?? 5,
         });
       }
     };
