@@ -352,7 +352,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      store_status: {
+        Row: {
+          close_time: string | null
+          closed_days: number[] | null
+          id: string | null
+          is_open: boolean | null
+          manual_override: boolean | null
+          open_time: string | null
+        }
+        Insert: {
+          close_time?: string | null
+          closed_days?: number[] | null
+          id?: string | null
+          is_open?: boolean | null
+          manual_override?: boolean | null
+          open_time?: string | null
+        }
+        Update: {
+          close_time?: string | null
+          closed_days?: number[] | null
+          id?: string | null
+          is_open?: boolean | null
+          manual_override?: boolean | null
+          open_time?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
