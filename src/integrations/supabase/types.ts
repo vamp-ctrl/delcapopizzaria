@@ -147,6 +147,8 @@ export type Database = {
       }
       combos: {
         Row: {
+          allowed_drink_ids: string[] | null
+          allowed_flavor_ids: string[] | null
           combo_price: number
           created_at: string
           description: string | null
@@ -154,10 +156,13 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           name: string
+          pizza_size: string | null
           regular_price: number
           updated_at: string
         }
         Insert: {
+          allowed_drink_ids?: string[] | null
+          allowed_flavor_ids?: string[] | null
           combo_price: number
           created_at?: string
           description?: string | null
@@ -165,10 +170,13 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name: string
+          pizza_size?: string | null
           regular_price: number
           updated_at?: string
         }
         Update: {
+          allowed_drink_ids?: string[] | null
+          allowed_flavor_ids?: string[] | null
           combo_price?: number
           created_at?: string
           description?: string | null
@@ -176,6 +184,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+          pizza_size?: string | null
           regular_price?: number
           updated_at?: string
         }
