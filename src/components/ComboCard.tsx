@@ -189,7 +189,7 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
               </div>
               <Button size="sm" onClick={handleAddToCart}>
                 <ShoppingCart className="w-4 h-4 mr-1" />
-                {hasPizza ? 'Escolher Sabores' : 'Adicionar'}
+                Escolher Itens
               </Button>
             </div>
           </div>
