@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { format, isToday, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
+import OrderCountdown from './OrderCountdown';
 
 type OrderStatus = Database['public']['Enums']['order_status'];
 type PaymentStatus = Database['public']['Enums']['payment_status'];
@@ -50,6 +51,11 @@ interface Order {
   created_at: string;
   printed: boolean;
   order_items: OrderItem[];
+}
+
+interface StoreSettings {
+  delivery_time_minutes: number;
+  pickup_time_minutes: number;
 }
 
 // Simplified status config - only show relevant statuses
@@ -94,6 +100,7 @@ const OrdersTab = () => {
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showHistory, setShowHistory] = useState(false);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>({ delivery_time_minutes: 45, pickup_time_minutes: 20 });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingOrdersRef = useRef<Set<string>>(new Set());
   const notificationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -156,6 +163,20 @@ const OrdersTab = () => {
     audioRef.current = new Audio('/notification.mp3');
     audioRef.current.load();
 
+    const fetchStoreSettings = async () => {
+      const { data, error } = await supabase
+        .from('store_settings')
+        .select('delivery_time_minutes, pickup_time_minutes')
+        .single();
+      
+      if (!error && data) {
+        setStoreSettings({
+          delivery_time_minutes: data.delivery_time_minutes,
+          pickup_time_minutes: data.pickup_time_minutes,
+        });
+      }
+    };
+
     const fetchOrders = async () => {
       // Fetch only orders from today for the main view
       // Use local timezone for "today" calculation
@@ -177,6 +198,7 @@ const OrdersTab = () => {
       setLoading(false);
     };
 
+    fetchStoreSettings();
     fetchOrders();
 
     // Subscribe to realtime updates
@@ -483,7 +505,7 @@ const OrdersTab = () => {
         </div>
         
         <div class="estimate">
-          Tempo estimado: ${isDelivery ? '45' : '40'} minutos
+          Tempo estimado: ${isDelivery ? storeSettings.delivery_time_minutes : storeSettings.pickup_time_minutes} minutos
         </div>
         
         <div class="divider-double"></div>
@@ -687,6 +709,17 @@ const OrdersTab = () => {
                           <strong>Obs:</strong> {order.notes}
                         </div>
                       )}
+
+                      {/* Countdown Timer */}
+                      <OrderCountdown 
+                        createdAt={order.created_at}
+                        estimatedMinutes={
+                          order.customer_address 
+                            ? storeSettings.delivery_time_minutes 
+                            : storeSettings.pickup_time_minutes
+                        }
+                        status={order.status}
+                      />
 
                       {/* Total */}
                       <div className="border-t border-border pt-3 flex justify-between items-center">
