@@ -7,7 +7,7 @@ interface ComboItem {
   quantity: number;
 }
 
-interface Combo {
+export interface Combo {
   id: string;
   name: string;
   description: string | null;
@@ -17,6 +17,8 @@ interface Combo {
   pizza_size: string | null;
   allowed_flavor_ids: string[] | null;
   allowed_drink_ids: string[] | null;
+  free_delivery: boolean;
+  pizza_count: number;
   items: ComboItem[];
 }
 
@@ -52,6 +54,8 @@ export const useCombos = () => {
               allowed_flavor_ids: combo.allowed_flavor_ids || null,
               allowed_drink_ids: combo.allowed_drink_ids || null,
               pizza_size: combo.pizza_size || null,
+              free_delivery: combo.free_delivery ?? false,
+              pizza_count: combo.pizza_count ?? 1,
             };
           })
         );

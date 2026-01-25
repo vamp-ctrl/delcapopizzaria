@@ -24,6 +24,8 @@ interface ComboCardProps {
     pizza_size: string | null;
     allowed_flavor_ids: string[] | null;
     allowed_drink_ids: string[] | null;
+    free_delivery: boolean;
+    pizza_count: number;
     items: ComboItem[];
   };
   index: number;
@@ -95,6 +97,9 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
   const firstPizzaItem = pizzaItems[0];
   const pizzaSize = getPizzaSize(firstPizzaItem?.product_name || '', combo.pizza_size);
   const maxFlavors = getMaxFlavors(pizzaSize);
+  
+  // Use pizza_count from combo, or calculate from items
+  const pizzaCount = combo.pizza_count ?? 1;
 
   const handleChooseItems = () => {
     // Always show selector if combo has pizza or drinks to choose
@@ -126,14 +131,22 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
       itemName += ` | ${selectedDrink}`;
     }
     
-    addItem({
+    // Store freeDelivery flag in the item for checkout calculation
+    const cartItem: any = {
       id: `combo-${combo.id}-${Date.now()}`,
       type: 'combo',
       name: itemName,
       price: finalPrice,
       flavors: flavors,
       size: selectedDrink ? `Bebida: ${selectedDrink}` : undefined,
-    });
+    };
+    
+    // Add free delivery metadata
+    if (combo.free_delivery) {
+      cartItem.freeDelivery = true;
+    }
+    
+    addItem(cartItem);
     
     toast.success(`${combo.name} adicionado ao carrinho!`);
   };
@@ -160,6 +173,11 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
                   -{savingsPercent}%
                 </Badge>
               )}
+              {combo.free_delivery && (
+                <Badge className="text-xs bg-green-500 hover:bg-green-600 text-white">
+                  Entrega Grátis
+                </Badge>
+              )}
             </div>
             
             {combo.description && (
@@ -184,7 +202,7 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
             
             {hasPizza && (
               <p className="text-xs text-primary mt-2">
-                Escolha até {maxFlavors} sabores
+                {pizzaCount > 1 ? `${pizzaCount} pizzas - ` : ''}Escolha até {maxFlavors} sabores{pizzaCount > 1 ? ' cada' : ''}
                 {hasDrinks && ' + bebida'}
               </p>
             )}

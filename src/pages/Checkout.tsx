@@ -70,7 +70,11 @@ const Checkout = () => {
   const [couponCode, setCouponCode] = useState('');
   const [loadingCoupons, setLoadingCoupons] = useState(false);
 
-  const deliveryFee = deliveryType === 'delivery' ? storeStatus.delivery_fee : 0;
+  // Check if any combo has free delivery
+  const hasFreeDeliveryCombo = items.some(item => item.type === 'combo' && item.freeDelivery);
+  
+  // Calculate delivery fee (0 if free delivery combo is in cart)
+  const deliveryFee = deliveryType === 'delivery' && !hasFreeDeliveryCombo ? storeStatus.delivery_fee : 0;
   
   // Calculate discount
   const calculateDiscount = (coupon: Coupon | null, subtotal: number): number => {
@@ -212,7 +216,29 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // 1. Create order in database - INCLUDE payment_method!
+      // 1. Validate and use coupon atomically (if applied)
+      let validatedCoupon = null;
+      if (appliedCoupon) {
+        const { data: couponResult, error: couponError } = await supabase
+          .rpc('validate_and_use_coupon', {
+            p_coupon_code: appliedCoupon.code,
+            p_order_total: total,
+          });
+
+        const result = couponResult as { valid: boolean; error?: string } | null;
+        
+        if (couponError || !result?.valid) {
+          const errorMsg = result?.error || 'Erro ao validar cupom';
+          toast.error(errorMsg);
+          setAppliedCoupon(null);
+          setCouponCode('');
+          setLoading(false);
+          return;
+        }
+        validatedCoupon = result;
+      }
+
+      // 2. Create order in database - INCLUDE payment_method!
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -234,14 +260,6 @@ const Checkout = () => {
         .single();
 
       if (orderError) throw orderError;
-
-      // 2. Update coupon usage count
-      if (appliedCoupon) {
-        await supabase
-          .from('coupons')
-          .update({ uses_count: appliedCoupon.uses_count + 1 })
-          .eq('id', appliedCoupon.id);
-      }
 
       // 3. Create order items with complete notes
       const orderItems = items.map(item => {

@@ -43,6 +43,8 @@ interface Combo {
   pizza_size: string | null;
   allowed_flavor_ids: string[] | null;
   allowed_drink_ids: string[] | null;
+  free_delivery: boolean;
+  pizza_count: number;
   items: ComboItem[];
 }
 
@@ -79,6 +81,8 @@ const CombosTab = () => {
   const [pizzaSize, setPizzaSize] = useState<string>('G');
   const [selectedFlavorIds, setSelectedFlavorIds] = useState<string[]>([]);
   const [selectedDrinkIds, setSelectedDrinkIds] = useState<string[]>([]);
+  const [freeDelivery, setFreeDelivery] = useState(false);
+  const [pizzaCount, setPizzaCount] = useState(1);
   const [items, setItems] = useState<ComboItem[]>([]);
 
   useEffect(() => {
@@ -120,6 +124,8 @@ const CombosTab = () => {
           items: itemsData || [],
           allowed_flavor_ids: combo.allowed_flavor_ids || [],
           allowed_drink_ids: combo.allowed_drink_ids || [],
+          free_delivery: combo.free_delivery ?? false,
+          pizza_count: combo.pizza_count ?? 1,
         };
       })
     );
@@ -161,6 +167,8 @@ const CombosTab = () => {
     setPizzaSize('G');
     setSelectedFlavorIds([]);
     setSelectedDrinkIds([]);
+    setFreeDelivery(false);
+    setPizzaCount(1);
     setItems([]);
     setEditingCombo(null);
   };
@@ -174,6 +182,8 @@ const CombosTab = () => {
     setPizzaSize(combo.pizza_size || 'G');
     setSelectedFlavorIds(combo.allowed_flavor_ids || []);
     setSelectedDrinkIds(combo.allowed_drink_ids || []);
+    setFreeDelivery(combo.free_delivery ?? false);
+    setPizzaCount(combo.pizza_count ?? 1);
     setItems(combo.items.map(i => ({
       product_id: i.product_id,
       product_name: i.product_name,
@@ -248,6 +258,8 @@ const CombosTab = () => {
       pizza_size: pizzaSize,
       allowed_flavor_ids: selectedFlavorIds.length > 0 ? selectedFlavorIds : null,
       allowed_drink_ids: selectedDrinkIds.length > 0 ? selectedDrinkIds : null,
+      free_delivery: freeDelivery,
+      pizza_count: pizzaCount,
     };
 
     try {
@@ -437,6 +449,40 @@ const CombosTab = () => {
                 </div>
               </div>
 
+              {/* Pizza count and Free delivery */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Qtd. de Pizzas</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={pizzaCount}
+                    onChange={(e) => setPizzaCount(parseInt(e.target.value) || 1)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Quantidade de pizzas que o cliente pode escolher
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Entrega Grátis</Label>
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                    <Switch
+                      checked={freeDelivery}
+                      onCheckedChange={setFreeDelivery}
+                    />
+                    <div>
+                      <p className="text-sm font-medium">
+                        {freeDelivery ? 'Sim' : 'Não'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Taxa de entrega R$ 0,00
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Tabs for Flavors and Drinks */}
               <Tabs defaultValue="flavors" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
@@ -605,6 +651,12 @@ const CombosTab = () => {
                           <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                             -{savings}%
                           </Badge>
+                        )}
+                        {combo.free_delivery && (
+                          <Badge className="bg-green-500 text-white">Entrega Grátis</Badge>
+                        )}
+                        {combo.pizza_count > 1 && (
+                          <Badge variant="outline">{combo.pizza_count} Pizzas</Badge>
                         )}
                         {combo.pizza_size && (
                           <Badge variant="outline">Pizza {combo.pizza_size}</Badge>
