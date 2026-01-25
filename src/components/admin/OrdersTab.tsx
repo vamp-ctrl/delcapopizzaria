@@ -287,25 +287,51 @@ const OrdersTab = () => {
     const dateStr = format(orderDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
     const orderNum = order.id.slice(-8).toUpperCase();
 
-    // Parse items to show flavors properly
+    // Parse items to show flavors properly - avoid duplicates
     const formatItem = (item: OrderItem) => {
       const notes = item.notes || '';
       // Check if notes contain flavor info (format: "Sabores: X, Y, Z")
       const flavorMatch = notes.match(/Sabores?:\s*(.+?)(?:\||$)/i);
       const flavors = flavorMatch ? flavorMatch[1].trim() : null;
-      const otherNotes = notes.replace(/Sabores?:\s*.+?(?:\||$)/gi, '').trim();
       
-      return { ...item, flavors, otherNotes };
+      // Check for drink selection
+      const drinkMatch = notes.match(/Bebida:\s*(.+?)(?:\||$)/i);
+      const drink = drinkMatch ? drinkMatch[1].trim() : null;
+      
+      // Check for border
+      const borderMatch = notes.match(/Borda:\s*(.+?)(?:\||$)/i);
+      const border = borderMatch ? borderMatch[1].trim() : null;
+      
+      // Remove already extracted info from notes
+      const otherNotes = notes
+        .replace(/Sabores?:\s*.+?(?:\||$)/gi, '')
+        .replace(/Bebida:\s*.+?(?:\||$)/gi, '')
+        .replace(/Borda:\s*.+?(?:\||$)/gi, '')
+        .trim();
+      
+      // Clean product name - remove size if it's in size_name
+      let cleanName = item.product_name;
+      if (item.size_name && cleanName.includes(`(${item.size_name})`)) {
+        cleanName = cleanName.replace(`(${item.size_name})`, '').trim();
+      }
+      
+      return { ...item, product_name: cleanName, flavors, drink, border, otherNotes };
     };
 
     const formattedItems = order.order_items.map(formatItem);
 
-    const paymentMethodLabel = {
-      pix: 'PIX',
-      credit: 'Cartão de Crédito',
-      debit: 'Cartão de Débito',
-      cash: 'Dinheiro',
-    }[order.payment_method || 'pix'] || order.payment_method;
+    // Get payment method label correctly from the order
+    const getPaymentMethodLabel = (method: string | null): string => {
+      const labels: Record<string, string> = {
+        pix: 'PIX',
+        credit: 'Cartao de Credito',
+        debit: 'Cartao de Debito',
+        cash: 'Dinheiro',
+      };
+      return method ? labels[method] || method : 'Nao informado';
+    };
+
+    const paymentMethodLabel = getPaymentMethodLabel(order.payment_method);
 
     const paymentStatusLabel = {
       pending: 'AGUARDANDO PAGAMENTO',
@@ -322,42 +348,43 @@ const OrdersTab = () => {
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'Courier New', Courier, monospace; 
-            font-size: 14px; 
-            font-weight: bold;
+            font-family: 'Segoe UI', 'Arial', sans-serif; 
+            font-size: 13px; 
             width: 280px; 
             margin: 0 auto; 
             padding: 8px; 
-            line-height: 1.5;
+            line-height: 1.4;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          .divider { border-top: 2px dashed #000; margin: 10px 0; }
-          .divider-double { border-top: 3px solid #000; margin: 10px 0; }
+          .divider { border-top: 1px dashed #333; margin: 10px 0; }
+          .divider-double { border-top: 2px solid #000; margin: 10px 0; }
           .center { text-align: center; }
           .right { text-align: right; }
-          .bold { font-weight: 900; }
-          .title { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
-          .subtitle { font-size: 12px; margin-top: 4px; font-weight: bold; }
-          .section-title { font-weight: 900; font-size: 14px; margin-bottom: 6px; text-transform: uppercase; border-bottom: 1px solid #000; padding-bottom: 2px; }
-          .row { display: flex; justify-content: space-between; margin: 4px 0; font-weight: bold; }
-          .item-block { margin: 8px 0; padding-left: 6px; border-left: 3px solid #000; }
-          .item-name { font-weight: 900; font-size: 14px; }
-          .item-detail { font-size: 13px; margin-left: 8px; font-weight: bold; }
-          .flavors { font-size: 13px; margin-left: 8px; font-weight: bold; }
-          .obs { background: #ddd; padding: 6px 8px; font-size: 13px; margin: 6px 0; font-weight: bold; }
-          .total-section { background: #eee; padding: 10px; margin: 10px 0; }
-          .grand-total { font-size: 20px; font-weight: 900; }
+          .bold { font-weight: 700; }
+          .title { font-size: 18px; font-weight: 800; letter-spacing: 1px; }
+          .subtitle { font-size: 11px; margin-top: 4px; }
+          .section-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 2px; }
+          .row { display: flex; justify-content: space-between; margin: 3px 0; }
+          .item-block { margin: 8px 0; padding-left: 6px; border-left: 2px solid #333; }
+          .item-name { font-weight: 700; font-size: 13px; }
+          .item-detail { font-size: 12px; margin-left: 8px; color: #333; }
+          .flavors { font-size: 12px; margin-left: 8px; font-weight: 600; }
+          .obs { background: #eee; padding: 5px 8px; font-size: 12px; margin: 5px 0; border-radius: 3px; }
+          .total-section { background: #f5f5f5; padding: 8px; margin: 10px 0; border-radius: 4px; }
+          .grand-total { font-size: 16px; font-weight: 800; }
           .status-badge { 
             display: inline-block; 
-            padding: 4px 10px; 
-            border: 2px solid #000; 
-            font-size: 12px; 
-            font-weight: 900;
-            margin: 6px 0;
+            padding: 3px 8px; 
+            border: 1px solid #333; 
+            font-size: 11px; 
+            font-weight: 600;
+            margin: 4px 0;
+            border-radius: 3px;
           }
-          .delivery-badge { background: #000; color: #fff; padding: 6px 10px; display: inline-block; margin: 6px 0; font-weight: 900; }
-          .footer { font-size: 12px; margin-top: 14px; font-weight: bold; }
+          .delivery-badge { background: #333; color: #fff; padding: 4px 8px; display: inline-block; margin: 4px 0; font-weight: 600; border-radius: 3px; }
+          .footer { font-size: 11px; margin-top: 12px; }
+          .estimate { font-size: 12px; background: #f0f0f0; padding: 6px; margin-top: 8px; border-radius: 3px; text-align: center; }
         </style>
       </head>
       <body>
@@ -370,8 +397,8 @@ const OrdersTab = () => {
         <div class="divider-double"></div>
         
         <div class="center">
-          <div class="bold" style="font-size: 16px;">PEDIDO #${orderNum}</div>
-          <div style="font-size: 13px;">${dateStr}</div>
+          <div class="bold" style="font-size: 15px;">PEDIDO #${orderNum}</div>
+          <div style="font-size: 12px;">${dateStr}</div>
           <div class="${isDelivery ? 'delivery-badge' : 'status-badge'}">${isDelivery ? 'DELIVERY' : 'RETIRADA'}</div>
         </div>
         
@@ -393,8 +420,10 @@ const OrdersTab = () => {
               <span class="item-name">${item.quantity}x ${item.product_name}</span>
               <span class="bold">R$ ${item.total_price.toFixed(2)}</span>
             </div>
-            ${item.size_name ? `<div class="item-detail">Tamanho: ${item.size_name}</div>` : ''}
+            ${item.size_name ? `<div class="item-detail">Tam: ${item.size_name}</div>` : ''}
             ${item.flavors ? `<div class="flavors">Sabores: ${item.flavors}</div>` : ''}
+            ${item.border ? `<div class="item-detail">Borda: ${item.border}</div>` : ''}
+            ${item.drink ? `<div class="item-detail">Bebida: ${item.drink}</div>` : ''}
             ${item.otherNotes && item.otherNotes.length > 0 ? `<div class="obs">${item.otherNotes}</div>` : ''}
           </div>
         `).join('')}
@@ -437,12 +466,16 @@ const OrdersTab = () => {
           <span class="status-badge">${paymentStatusLabel}</span>
         </div>
         
+        <div class="estimate">
+          Tempo estimado: ${isDelivery ? '45' : '40'} minutos
+        </div>
+        
         <div class="divider-double"></div>
         
         <!-- RODAPE -->
         <div class="footer center">
           <div>Obrigado pela preferencia!</div>
-          <div style="margin-top: 6px;">Del Capo Pizzaria</div>
+          <div style="margin-top: 4px;">Del Capo Pizzaria</div>
           <div>+55 (69) 9 9251-7150</div>
         </div>
         

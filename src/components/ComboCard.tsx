@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Package, ShoppingCart, Pizza } from 'lucide-react';
+import { Package, ShoppingCart, Pizza, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/context/CartContext';
@@ -35,7 +35,22 @@ const isPizzaItem = (productName: string) => {
          lowerName.includes('grande') || 
          lowerName.includes('média') || 
          lowerName.includes('pequena') || 
-         lowerName.includes('gigante');
+         lowerName.includes('gigante') ||
+         lowerName.includes(' g ') ||
+         lowerName.includes(' m ') ||
+         lowerName.includes(' p ');
+};
+
+// Check if item is a drink
+const isDrinkItem = (productName: string) => {
+  const lowerName = productName.toLowerCase();
+  return lowerName.includes('coca') || 
+         lowerName.includes('guaraná') ||
+         lowerName.includes('pepsi') ||
+         lowerName.includes('suco') ||
+         lowerName.includes('refrigerante') ||
+         lowerName.includes('água') ||
+         lowerName.includes('fanta');
 };
 
 // Get pizza size from product name
@@ -59,55 +74,55 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
   const savingsPercent = Math.round((savings / combo.regular_price) * 100);
   
   const [showFlavorSelector, setShowFlavorSelector] = useState(false);
-  const [selectedFlavors, setSelectedFlavors] = useState<string[]>([]);
-  const [premiumExtra, setPremiumExtra] = useState(0);
   
   // Check if combo has pizza items that need flavor selection
   const pizzaItems = combo.items.filter(item => isPizzaItem(item.product_name));
+  const drinkItems = combo.items.filter(item => isDrinkItem(item.product_name));
   const hasPizza = pizzaItems.length > 0;
   const firstPizzaItem = pizzaItems[0];
   const pizzaSize = firstPizzaItem ? getPizzaSize(firstPizzaItem.product_name) : 'G';
   const maxFlavors = getMaxFlavors(pizzaSize);
 
+  // Get drink names for selection
+  const availableDrinks = drinkItems.map(item => item.product_name);
+
   const handleAddToCart = () => {
-    if (hasPizza && selectedFlavors.length === 0) {
+    if (hasPizza) {
       setShowFlavorSelector(true);
       return;
     }
     
-    const finalPrice = combo.combo_price + premiumExtra;
-    
+    // No pizza in combo, just add it
     addItem({
       id: `combo-${combo.id}-${Date.now()}`,
       type: 'combo',
       name: combo.name,
-      price: finalPrice,
-      flavors: selectedFlavors.length > 0 ? selectedFlavors : undefined,
+      price: combo.combo_price,
     });
     
     toast.success(`${combo.name} adicionado ao carrinho!`);
-    setSelectedFlavors([]);
-    setPremiumExtra(0);
   };
 
-  const handleFlavorsConfirm = (flavors: string[], premiumCount: number) => {
-    setSelectedFlavors(flavors);
-    setPremiumExtra(premiumCount * PREMIUM_PRICE);
-    
-    // Add to cart immediately after selection
+  const handleFlavorsConfirm = (flavors: string[], premiumCount: number, selectedDrink: string | null) => {
     const finalPrice = combo.combo_price + (premiumCount * PREMIUM_PRICE);
+    
+    // Build name with details
+    let itemName = `${combo.name} - ${flavors.join(' / ')}`;
+    if (selectedDrink) {
+      itemName += ` | ${selectedDrink}`;
+    }
     
     addItem({
       id: `combo-${combo.id}-${Date.now()}`,
       type: 'combo',
-      name: combo.name,
+      name: itemName,
       price: finalPrice,
       flavors: flavors,
+      // Store drink in a way we can parse later for the receipt
+      size: selectedDrink ? `Bebida: ${selectedDrink}` : undefined,
     });
     
     toast.success(`${combo.name} adicionado ao carrinho!`);
-    setSelectedFlavors([]);
-    setPremiumExtra(0);
   };
 
   return (
@@ -147,6 +162,9 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
                   {isPizzaItem(item.product_name) && (
                     <Pizza className="w-3 h-3 text-primary" />
                   )}
+                  {isDrinkItem(item.product_name) && (
+                    <Coffee className="w-3 h-3 text-primary" />
+                  )}
                 </div>
               ))}
             </div>
@@ -154,6 +172,7 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
             {hasPizza && (
               <p className="text-xs text-primary mt-2">
                 Escolha até {maxFlavors} sabores
+                {drinkItems.length > 1 && ' + bebida'}
               </p>
             )}
             
@@ -185,6 +204,7 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
           maxFlavors={maxFlavors}
           size={pizzaSize}
           comboName={combo.name}
+          availableDrinks={availableDrinks}
         />
       )}
     </>
