@@ -202,7 +202,7 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // 1. Create order in database
+      // 1. Create order in database - INCLUDE payment_method!
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -218,6 +218,7 @@ const Checkout = () => {
           notes: notes || null,
           status: 'pending',
           payment_status: 'pending',
+          payment_method: paymentMethod,
         })
         .select()
         .single();

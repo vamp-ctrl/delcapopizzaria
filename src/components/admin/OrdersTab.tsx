@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { format, isToday, subHours, startOfDay, endOfDay } from 'date-fns';
+import { format, isToday, startOfDay, endOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -98,10 +98,10 @@ const OrdersTab = () => {
   const pendingOrdersRef = useRef<Set<string>>(new Set());
   const notificationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get orders from last 24 hours for the main view
-  const getRecentOrders = (allOrders: Order[]) => {
-    const twentyFourHoursAgo = subHours(new Date(), 24);
-    return allOrders.filter(order => new Date(order.created_at) >= twentyFourHoursAgo);
+  // Get orders from today only for the main view
+  const getTodayOrders = (allOrders: Order[]) => {
+    const todayStart = startOfDay(new Date());
+    return allOrders.filter(order => new Date(order.created_at) >= todayStart);
   };
 
   // Play notification sound
@@ -151,13 +151,13 @@ const OrdersTab = () => {
     audioRef.current.load();
 
     const fetchOrders = async () => {
-      // Fetch only orders from the last 24 hours for the main view
-      const twentyFourHoursAgo = subHours(new Date(), 24).toISOString();
+      // Fetch only orders from today for the main view
+      const todayStart = startOfDay(new Date()).toISOString();
       
       const { data, error } = await supabase
         .from('orders')
         .select(`*, order_items (*), discount_amount, coupon_code`)
-        .gte('created_at', twentyFourHoursAgo)
+        .gte('created_at', todayStart)
         .order('created_at', { ascending: false });
 
       if (error) {
