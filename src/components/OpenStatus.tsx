@@ -42,7 +42,7 @@ const OpenStatus = () => {
     const { data, error } = await supabase
       .from('store_settings')
       .select('*')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching store status:', error);
@@ -56,9 +56,9 @@ const OpenStatus = () => {
   useEffect(() => {
     fetchStatus();
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes on store_settings table
     const channel = supabase
-      .channel('store-status')
+      .channel('store-status-realtime')
       .on(
         'postgres_changes',
         {
@@ -67,14 +67,16 @@ const OpenStatus = () => {
           table: 'store_settings',
         },
         (payload) => {
-          console.log('Store settings updated:', payload);
+          console.log('Store settings updated (realtime):', payload);
           const newSettings = payload.new as StoreSettings;
           if (newSettings) {
             setIsOpen(determineStatus(newSettings));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     // Also check periodically for auto mode time changes
     const interval = setInterval(fetchStatus, 60000);

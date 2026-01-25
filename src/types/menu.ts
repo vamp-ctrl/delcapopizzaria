@@ -27,6 +27,7 @@ export interface CartItem {
   flavors?: string[];
   border?: string;
   borderPrice?: number;
+  freeDelivery?: boolean;
 }
 
 export interface BorderOption {

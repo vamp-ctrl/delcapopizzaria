@@ -152,10 +152,12 @@ export type Database = {
           combo_price: number
           created_at: string
           description: string | null
+          free_delivery: boolean | null
           id: string
           image_url: string | null
           is_active: boolean | null
           name: string
+          pizza_count: number | null
           pizza_size: string | null
           regular_price: number
           updated_at: string
@@ -166,10 +168,12 @@ export type Database = {
           combo_price: number
           created_at?: string
           description?: string | null
+          free_delivery?: boolean | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           name: string
+          pizza_count?: number | null
           pizza_size?: string | null
           regular_price: number
           updated_at?: string
@@ -180,10 +184,12 @@ export type Database = {
           combo_price?: number
           created_at?: string
           description?: string | null
+          free_delivery?: boolean | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+          pizza_count?: number | null
           pizza_size?: string | null
           regular_price?: number
           updated_at?: string
@@ -549,6 +555,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      validate_and_use_coupon: {
+        Args: { p_coupon_code: string; p_order_total: number }
+        Returns: Json
       }
     }
     Enums: {
