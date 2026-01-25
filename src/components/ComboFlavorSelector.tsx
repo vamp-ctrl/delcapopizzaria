@@ -14,7 +14,10 @@ interface ComboFlavorSelectorProps {
   maxFlavors: number;
   size: PizzaSize;
   comboName: string;
-  availableDrinks: string[];
+  allowedFlavorIds: string[] | null;
+  allowedDrinkIds: string[] | null;
+  hasPizzaSelection: boolean;
+  hasDrinkSelection: boolean;
 }
 
 const SIZE_LABELS: Record<PizzaSize, string> = {
@@ -33,7 +36,10 @@ const ComboFlavorSelector = ({
   maxFlavors,
   size,
   comboName,
-  availableDrinks,
+  allowedFlavorIds,
+  allowedDrinkIds,
+  hasPizzaSelection,
+  hasDrinkSelection,
 }: ComboFlavorSelectorProps) => {
   const { pizzasSalgadas, pizzasDoces, loading } = usePizzas();
   const { drinks } = useDrinks();
@@ -43,15 +49,39 @@ const ComboFlavorSelector = ({
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
   const [step, setStep] = useState<'flavors' | 'drinks'>('flavors');
 
-  // Filter available drinks from the combo items
-  const comboDrinks = drinks.filter(drink => 
-    availableDrinks.some(ad => 
-      drink.name.toLowerCase().includes(ad.toLowerCase()) ||
-      ad.toLowerCase().includes(drink.name.toLowerCase())
-    )
-  );
+  // Filter flavors by allowed IDs if specified
+  const filterByAllowedIds = (items: { id: string; name: string; description?: string; isPremium?: boolean; base_price?: number }[]) => {
+    if (!allowedFlavorIds || allowedFlavorIds.length === 0) {
+      return items; // No restriction, show all
+    }
+    return items.filter(item => allowedFlavorIds.includes(item.id));
+  };
 
-  const hasDrinkSelection = availableDrinks.length > 1 || comboDrinks.length > 1;
+  // Filter drinks by allowed IDs if specified
+  const filterDrinksByAllowedIds = (drinksList: { id: string; name: string; size: string }[]) => {
+    if (!allowedDrinkIds || allowedDrinkIds.length === 0) {
+      return drinksList; // No restriction, show all
+    }
+    return drinksList.filter(drink => allowedDrinkIds.includes(drink.id));
+  };
+
+  const availableFlavors = {
+    salgadas: filterByAllowedIds(pizzasSalgadas),
+    doces: filterByAllowedIds(pizzasDoces),
+  };
+
+  const availableDrinks = filterDrinksByAllowedIds(drinks);
+
+  // Determine what step to show first
+  useEffect(() => {
+    if (isOpen) {
+      if (hasPizzaSelection && (availableFlavors.salgadas.length > 0 || availableFlavors.doces.length > 0)) {
+        setStep('flavors');
+      } else if (hasDrinkSelection && availableDrinks.length > 0) {
+        setStep('drinks');
+      }
+    }
+  }, [isOpen, hasPizzaSelection, hasDrinkSelection, availableFlavors.salgadas.length, availableFlavors.doces.length, availableDrinks.length]);
 
   // Reset on close
   useEffect(() => {
@@ -78,9 +108,7 @@ const ComboFlavorSelector = ({
   };
 
   const handleNext = () => {
-    if (selectedFlavors.length === 0) return;
-    
-    if (hasDrinkSelection) {
+    if (hasDrinkSelection && availableDrinks.length > 0) {
       setStep('drinks');
     } else {
       handleConfirm();
@@ -88,7 +116,10 @@ const ComboFlavorSelector = ({
   };
 
   const handleConfirm = () => {
-    if (selectedFlavors.length === 0) return;
+    // Validate: if pizza selection required, need flavors; if drink selection required, need drink
+    if (hasPizzaSelection && selectedFlavors.length === 0 && (availableFlavors.salgadas.length > 0 || availableFlavors.doces.length > 0)) {
+      return;
+    }
     onConfirm(selectedFlavors, premiumCount, selectedDrink);
     onClose();
   };
@@ -100,8 +131,11 @@ const ComboFlavorSelector = ({
     );
   };
 
-  const filteredSalgadas = filterBySearch(pizzasSalgadas);
-  const filteredDoces = filterBySearch(pizzasDoces);
+  const filteredSalgadas = filterBySearch(availableFlavors.salgadas);
+  const filteredDoces = filterBySearch(availableFlavors.doces);
+
+  const showFlavorStep = hasPizzaSelection && (availableFlavors.salgadas.length > 0 || availableFlavors.doces.length > 0);
+  const showDrinkStep = hasDrinkSelection && availableDrinks.length > 0;
 
   const renderFlavorButton = (pizza: { id: string; name: string; description?: string; isPremium?: boolean; base_price?: number }) => {
     const isSelected = selectedFlavors.includes(pizza.name);
@@ -165,7 +199,7 @@ const ComboFlavorSelector = ({
           <div className="flex items-center gap-2">
             <Coffee className="w-4 h-4 text-muted-foreground" />
             <span className="font-medium text-sm">{drink.name}</span>
-            <span className="text-xs text-muted-foreground">{drink.size}</span>
+            {drink.size && <span className="text-xs text-muted-foreground">{drink.size}</span>}
           </div>
           {isSelected && (
             <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
@@ -202,7 +236,7 @@ const ComboFlavorSelector = ({
                   {step === 'flavors' ? 'Escolha os Sabores' : 'Escolha a Bebida'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {comboName} - Pizza {SIZE_LABELS[size]}
+                  {comboName} {showFlavorStep && `- Pizza ${SIZE_LABELS[size]}`}
                 </p>
               </div>
               <Button variant="ghost" size="icon" onClick={onClose}>
@@ -210,7 +244,7 @@ const ComboFlavorSelector = ({
               </Button>
             </div>
 
-            {step === 'flavors' ? (
+            {step === 'flavors' && showFlavorStep ? (
               <>
                 {/* Counter */}
                 <div className="px-4 py-2 bg-muted/50 flex items-center justify-between shrink-0">
@@ -266,6 +300,12 @@ const ComboFlavorSelector = ({
                           </div>
                         </div>
                       )}
+
+                      {filteredSalgadas.length === 0 && filteredDoces.length === 0 && (
+                        <p className="text-center text-muted-foreground py-8">
+                          Nenhum sabor encontrado
+                        </p>
+                      )}
                     </>
                   )}
                 </div>
@@ -283,63 +323,48 @@ const ComboFlavorSelector = ({
                     className="w-full"
                     size="lg"
                   >
-                    {hasDrinkSelection ? 'Próximo: Escolher Bebida' : `Confirmar Sabores (${selectedFlavors.length})`}
+                    {showDrinkStep ? 'Próximo: Escolher Bebida' : `Confirmar (${selectedFlavors.length} sabores)`}
                   </Button>
                 </div>
               </>
-            ) : (
+            ) : step === 'drinks' && showDrinkStep ? (
               <>
-                {/* Drinks selection */}
-                <div className="px-4 py-2 bg-muted/50 flex items-center justify-between shrink-0">
-                  <span className="text-sm text-muted-foreground">
-                    Sabores: {selectedFlavors.join(', ')}
-                  </span>
-                </div>
+                {/* Selected flavors summary */}
+                {selectedFlavors.length > 0 && (
+                  <div className="px-4 py-2 bg-muted/50 shrink-0">
+                    <span className="text-sm text-muted-foreground">
+                      Sabores: {selectedFlavors.join(', ')}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
                   <h4 className="font-semibold text-sm mb-2 text-muted-foreground">
                     Escolha sua bebida
                   </h4>
-                  {comboDrinks.map(renderDrinkButton)}
+                  {availableDrinks.map(renderDrinkButton)}
                   
-                  {/* Also show raw drink names from combo if no matches */}
-                  {comboDrinks.length === 0 && availableDrinks.map((drinkName, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedDrink(drinkName)}
-                      className={`w-full text-left p-3 rounded-lg border transition-all ${
-                        selectedDrink === drinkName
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <Coffee className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium text-sm">{drinkName}</span>
-                        </div>
-                        {selectedDrink === drinkName && (
-                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-                            <Check className="w-3 h-3 text-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                  {availableDrinks.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      Nenhuma bebida disponível
+                    </p>
+                  )}
                 </div>
 
                 {/* Footer */}
                 <div className="p-4 border-t border-border bg-background shrink-0 space-y-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep('flavors')}
-                    className="w-full"
-                  >
-                    Voltar para Sabores
-                  </Button>
+                  {showFlavorStep && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setStep('flavors')}
+                      className="w-full"
+                    >
+                      Voltar para Sabores
+                    </Button>
+                  )}
                   <Button
                     onClick={handleConfirm}
-                    disabled={!selectedDrink && hasDrinkSelection}
+                    disabled={!selectedDrink}
                     className="w-full"
                     size="lg"
                   >
@@ -347,6 +372,17 @@ const ComboFlavorSelector = ({
                   </Button>
                 </div>
               </>
+            ) : (
+              // No selection needed, just confirm
+              <div className="p-4">
+                <Button
+                  onClick={handleConfirm}
+                  className="w-full"
+                  size="lg"
+                >
+                  Adicionar ao Carrinho
+                </Button>
+              </div>
             )}
           </motion.div>
         </motion.div>

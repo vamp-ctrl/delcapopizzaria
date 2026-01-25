@@ -140,24 +140,34 @@ const Checkout = () => {
       return;
     }
 
-    // Fetch user profile
+    // Fetch user profile - run immediately
     const fetchProfile = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('name, phone, address')
-        .eq('user_id', user.id)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('name, phone, address')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (data) {
-        setProfile(data);
-        setCustomerName(data.name || '');
-        setCustomerPhone(data.phone || '');
-        setCustomerAddress(data.address || '');
+        if (error) {
+          console.error('Error fetching profile:', error);
+          return;
+        }
+
+        if (data) {
+          setProfile(data);
+          // Only set if not already set (avoid overwriting user edits)
+          if (!customerName) setCustomerName(data.name || '');
+          if (!customerPhone) setCustomerPhone(data.phone || '');
+          if (!customerAddress) setCustomerAddress(data.address || '');
+        }
+      } catch (err) {
+        console.error('Profile fetch error:', err);
       }
     };
 
     fetchProfile();
-  }, [user, items, navigate]);
+  }, [user, items.length, navigate]);
 
   // Check if coupon meets order requirements
   const isCouponValid = (coupon: Coupon): boolean => {
