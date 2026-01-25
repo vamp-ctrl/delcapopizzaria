@@ -14,6 +14,9 @@ interface Combo {
   regular_price: number;
   combo_price: number;
   image_url: string | null;
+  pizza_size: string | null;
+  allowed_flavor_ids: string[] | null;
+  allowed_drink_ids: string[] | null;
   items: ComboItem[];
 }
 
@@ -43,7 +46,13 @@ export const useCombos = () => {
               .from('combo_items')
               .select('id, product_name, quantity')
               .eq('combo_id', combo.id);
-            return { ...combo, items: itemsData || [] };
+            return { 
+              ...combo, 
+              items: itemsData || [],
+              allowed_flavor_ids: combo.allowed_flavor_ids || null,
+              allowed_drink_ids: combo.allowed_drink_ids || null,
+              pizza_size: combo.pizza_size || null,
+            };
           })
         );
 

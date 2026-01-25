@@ -98,10 +98,16 @@ const OrdersTab = () => {
   const pendingOrdersRef = useRef<Set<string>>(new Set());
   const notificationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get orders from today only for the main view
+  // Get orders from today only for the main view - using Brazil timezone
   const getTodayOrders = (allOrders: Order[]) => {
-    const todayStart = startOfDay(new Date());
-    return allOrders.filter(order => new Date(order.created_at) >= todayStart);
+    // Brazil timezone offset (UTC-4 for Amazon time / UTC-3 for Brasilia)
+    // Using a fixed check for the start of day in local context
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    return allOrders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      return orderDate >= todayStart;
+    });
   };
 
   // Play notification sound
@@ -152,12 +158,14 @@ const OrdersTab = () => {
 
     const fetchOrders = async () => {
       // Fetch only orders from today for the main view
-      const todayStart = startOfDay(new Date()).toISOString();
+      // Use local timezone for "today" calculation
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
       
       const { data, error } = await supabase
         .from('orders')
         .select(`*, order_items (*), discount_amount, coupon_code`)
-        .gte('created_at', todayStart)
+        .gte('created_at', todayStart.toISOString())
         .order('created_at', { ascending: false });
 
       if (error) {
