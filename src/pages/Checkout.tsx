@@ -232,16 +232,34 @@ const Checkout = () => {
           .eq('id', appliedCoupon.id);
       }
 
-      // 3. Create order items
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        product_name: item.name,
-        size_name: item.size || null,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-        notes: item.flavors?.join(' / ') || null,
-      }));
+      // 3. Create order items with complete notes
+      const orderItems = items.map(item => {
+        // Build comprehensive notes for the receipt
+        const notesParts: string[] = [];
+        
+        if (item.flavors && item.flavors.length > 0) {
+          notesParts.push(`Sabores: ${item.flavors.join(', ')}`);
+        }
+        
+        if (item.border) {
+          notesParts.push(`Borda: ${item.border}`);
+        }
+        
+        // Check if size contains drink info (from combos)
+        if (item.size && item.size.startsWith('Bebida:')) {
+          notesParts.push(item.size);
+        }
+        
+        return {
+          order_id: order.id,
+          product_name: item.name,
+          size_name: item.size && !item.size.startsWith('Bebida:') ? item.size : (item.type === 'pizza' ? item.size : null),
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+          notes: notesParts.length > 0 ? notesParts.join(' | ') : null,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')

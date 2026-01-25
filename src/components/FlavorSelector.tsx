@@ -294,7 +294,7 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
             </div>
 
             {/* Flavors list */}
-            <div className="overflow-y-auto flex-1 p-4">
+            <div className="overflow-y-auto flex-1 p-4 pb-24">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -317,7 +317,7 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
 
                   {/* Doces Section */}
                   {filteredDoces.length > 0 && (
-                    <div>
+                    <div className="mb-6">
                       <div className="flex items-center gap-2 mb-3 sticky top-0 bg-background py-2 z-10">
                         <Cookie className="w-5 h-5 text-secondary" />
                         <h4 className="font-display font-bold text-foreground">Doces</h4>
@@ -334,16 +334,17 @@ const FlavorSelector = ({ isOpen, onClose, selectedSize }: FlavorSelectorProps) 
                       Nenhum sabor encontrado
                     </p>
                   )}
+
+                  {/* Border Selector - MOVED TO BOTTOM OF LIST */}
+                  <div className="mt-8 p-4 bg-muted/30 rounded-xl border border-border">
+                    <h4 className="font-display font-bold text-foreground mb-3">Escolha a Borda</h4>
+                    <BorderSelector
+                      value={selectedBorder?.name || null}
+                      onChange={setSelectedBorder}
+                    />
+                  </div>
                 </>
               )}
-            </div>
-
-            {/* Border Selector */}
-            <div className="p-4 border-t border-border bg-muted/30 shrink-0">
-              <BorderSelector
-                value={selectedBorder?.name || null}
-                onChange={setSelectedBorder}
-              />
             </div>
 
             {/* Summary and Add to cart */}
