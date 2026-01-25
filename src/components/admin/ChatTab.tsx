@@ -35,8 +35,21 @@ const ChatTab = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play notification sound for new messages
+  const playNotification = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    }
+  };
 
   useEffect(() => {
+    // Preload notification sound
+    audioRef.current = new Audio('/notification.mp3');
+    audioRef.current.load();
+    
     fetchMessages();
 
     // Subscribe to realtime messages
@@ -48,6 +61,8 @@ const ChatTab = () => {
         (payload) => {
           const newMsg = payload.new as ChatMessage;
           if (newMsg.sender_type === 'customer') {
+            // Play notification sound
+            playNotification();
             toast.info('💬 Nova mensagem recebida!');
             fetchMessages();
           }

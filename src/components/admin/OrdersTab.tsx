@@ -43,6 +43,8 @@ interface Order {
   payment_method: string | null;
   subtotal: number;
   delivery_fee: number;
+  discount_amount: number | null;
+  coupon_code: string | null;
   total: number;
   notes: string | null;
   created_at: string;
@@ -154,7 +156,7 @@ const OrdersTab = () => {
       
       const { data, error } = await supabase
         .from('orders')
-        .select(`*, order_items (*)`)
+        .select(`*, order_items (*), discount_amount, coupon_code`)
         .gte('created_at', twentyFourHoursAgo)
         .order('created_at', { ascending: false });
 
@@ -223,7 +225,7 @@ const OrdersTab = () => {
 
     const { data, error } = await supabase
       .from('orders')
-      .select(`*, order_items (*)`)
+      .select(`*, order_items (*), discount_amount, coupon_code`)
       .gte('created_at', start)
       .lte('created_at', end)
       .order('created_at', { ascending: false });
@@ -446,6 +448,12 @@ const OrdersTab = () => {
             <div class="row">
               <span>Taxa de entrega:</span>
               <span>R$ ${order.delivery_fee.toFixed(2)}</span>
+            </div>
+          ` : ''}
+          ${order.coupon_code && order.discount_amount && order.discount_amount > 0 ? `
+            <div class="row" style="color: #16a34a;">
+              <span>Cupom (${order.coupon_code}):</span>
+              <span>- R$ ${order.discount_amount.toFixed(2)}</span>
             </div>
           ` : ''}
           <div class="divider"></div>
