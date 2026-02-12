@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Star, Check, Coffee } from 'lucide-react';
+import { X, Search, Star, Check, Coffee, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { usePizzas } from '@/hooks/usePizzas';
 import { useDrinks } from '@/hooks/useDrinks';
-import { PizzaSize } from '@/types/menu';
+import { supabase } from '@/integrations/supabase/client';
+import { PizzaSize, BorderOption } from '@/types/menu';
 
 interface ComboFlavorSelectorProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (flavors: string[], premiumCount: number, selectedDrink: string | null) => void;
+  onConfirm: (flavors: string[], premiumCount: number, selectedDrink: string | null, selectedBorder: { name: string; price: number } | null) => void;
   maxFlavors: number;
   size: PizzaSize;
   comboName: string;
@@ -47,7 +50,26 @@ const ComboFlavorSelector = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [premiumCount, setPremiumCount] = useState(0);
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
-  const [step, setStep] = useState<'flavors' | 'drinks'>('flavors');
+  const [selectedBorder, setSelectedBorder] = useState<{ name: string; price: number } | null>(null);
+  const [borderOptions, setBorderOptions] = useState<BorderOption[]>([]);
+  const [step, setStep] = useState<'flavors' | 'drinks' | 'border'>('flavors');
+
+  // Fetch border options
+  useEffect(() => {
+    const fetchBorders = async () => {
+      const { data } = await supabase
+        .from('border_options')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      if (data) {
+        setBorderOptions(data);
+        const noBorder = data.find(b => b.price === 0);
+        if (noBorder) setSelectedBorder({ name: noBorder.name, price: 0 });
+      }
+    };
+    fetchBorders();
+  }, []);
 
   // Filter flavors by allowed IDs if specified
   const filterByAllowedIds = (items: { id: string; name: string; description?: string; isPremium?: boolean; base_price?: number }[]) => {
@@ -90,6 +112,8 @@ const ComboFlavorSelector = ({
       setSearchTerm('');
       setPremiumCount(0);
       setSelectedDrink(null);
+      const noBorder = borderOptions.find(b => b.price === 0);
+      setSelectedBorder(noBorder ? { name: noBorder.name, price: 0 } : null);
       setStep('flavors');
     }
   }, [isOpen]);
@@ -108,19 +132,25 @@ const ComboFlavorSelector = ({
   };
 
   const handleNext = () => {
-    if (hasDrinkSelection && availableDrinks.length > 0) {
+    if (step === 'flavors' && hasDrinkSelection && availableDrinks.length > 0) {
       setStep('drinks');
+    } else if (step === 'drinks' || step === 'flavors') {
+      // Go to border step if pizza selection exists
+      if (hasPizzaSelection && borderOptions.length > 0) {
+        setStep('border');
+      } else {
+        handleConfirm();
+      }
     } else {
       handleConfirm();
     }
   };
 
   const handleConfirm = () => {
-    // Validate: if pizza selection required, need flavors; if drink selection required, need drink
     if (hasPizzaSelection && selectedFlavors.length === 0 && (availableFlavors.salgadas.length > 0 || availableFlavors.doces.length > 0)) {
       return;
     }
-    onConfirm(selectedFlavors, premiumCount, selectedDrink);
+    onConfirm(selectedFlavors, premiumCount, selectedDrink, selectedBorder);
     onClose();
   };
 
@@ -233,7 +263,7 @@ const ComboFlavorSelector = ({
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
               <div>
                 <h3 className="font-display text-lg font-semibold">
-                  {step === 'flavors' ? 'Escolha os Sabores' : 'Escolha a Bebida'}
+                  {step === 'flavors' ? 'Escolha os Sabores' : step === 'drinks' ? 'Escolha a Bebida' : 'Escolha a Borda'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {comboName} {showFlavorStep && `- Pizza ${SIZE_LABELS[size]}`}
@@ -323,7 +353,7 @@ const ComboFlavorSelector = ({
                     className="w-full"
                     size="lg"
                   >
-                    {showDrinkStep ? 'Próximo: Escolher Bebida' : `Confirmar (${selectedFlavors.length} sabores)`}
+                    {showDrinkStep ? 'Próximo: Escolher Bebida' : (hasPizzaSelection && borderOptions.length > 0) ? 'Próximo: Escolher Borda' : `Confirmar (${selectedFlavors.length} sabores)`}
                   </Button>
                 </div>
               </>
@@ -363,8 +393,83 @@ const ComboFlavorSelector = ({
                     </Button>
                   )}
                   <Button
-                    onClick={handleConfirm}
+                    onClick={handleNext}
                     disabled={!selectedDrink}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {(hasPizzaSelection && borderOptions.length > 0) ? 'Próximo: Escolher Borda' : 'Confirmar Combo'}
+                  </Button>
+                </div>
+              </>
+            ) : step === 'border' ? (
+              <>
+                {/* Summary */}
+                <div className="px-4 py-2 bg-muted/50 shrink-0 space-y-1">
+                  {selectedFlavors.length > 0 && (
+                    <span className="text-sm text-muted-foreground block">
+                      Sabores: {selectedFlavors.join(', ')}
+                    </span>
+                  )}
+                  {selectedDrink && (
+                    <span className="text-sm text-muted-foreground block">
+                      Bebida: {selectedDrink}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                  <h4 className="font-semibold text-sm mb-2 text-muted-foreground">
+                    Escolha a borda
+                  </h4>
+                  <RadioGroup
+                    value={selectedBorder?.name || ''}
+                    onValueChange={(val) => {
+                      const opt = borderOptions.find(o => o.name === val);
+                      if (opt) setSelectedBorder({ name: opt.name, price: opt.price });
+                    }}
+                    className="space-y-2"
+                  >
+                    {borderOptions.map((option) => (
+                      <div
+                        key={option.id}
+                        className={`flex items-center space-x-2 p-3 rounded-lg border transition-all cursor-pointer ${
+                          selectedBorder?.name === option.name
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <RadioGroupItem value={option.name} id={`combo-border-${option.id}`} />
+                        <Label htmlFor={`combo-border-${option.id}`} className="flex-1 cursor-pointer">
+                          <span className="font-medium">{option.name}</span>
+                          {option.price > 0 && (
+                            <span className="text-xs text-secondary ml-1">
+                              +R$ {option.price.toFixed(2)}
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-border bg-background shrink-0 space-y-2">
+                  {selectedBorder && selectedBorder.price > 0 && (
+                    <p className="text-sm text-secondary text-center">
+                      Borda: +R$ {selectedBorder.price.toFixed(2)}
+                    </p>
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(showDrinkStep ? 'drinks' : 'flavors')}
+                    className="w-full"
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    onClick={handleConfirm}
+                    disabled={!selectedBorder}
                     className="w-full"
                     size="lg"
                   >

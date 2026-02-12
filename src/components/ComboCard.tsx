@@ -119,8 +119,9 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
     toast.success(`${combo.name} adicionado ao carrinho!`);
   };
 
-  const handleFlavorsConfirm = (flavors: string[], premiumCount: number, selectedDrink: string | null) => {
-    const finalPrice = combo.combo_price + (premiumCount * PREMIUM_PRICE);
+  const handleFlavorsConfirm = (flavors: string[], premiumCount: number, selectedDrink: string | null, selectedBorder: { name: string; price: number } | null) => {
+    const borderPrice = selectedBorder?.price || 0;
+    const finalPrice = combo.combo_price + (premiumCount * PREMIUM_PRICE) + borderPrice;
     
     // Build name with details
     let itemName = combo.name;
@@ -139,6 +140,8 @@ const ComboCard = ({ combo, index }: ComboCardProps) => {
       price: finalPrice,
       flavors: flavors,
       size: selectedDrink ? `Bebida: ${selectedDrink}` : undefined,
+      border: selectedBorder?.name || undefined,
+      borderPrice: borderPrice > 0 ? borderPrice : undefined,
     };
     
     // Add free delivery metadata
