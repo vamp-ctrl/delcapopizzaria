@@ -8,7 +8,8 @@ import {
   Bell,
   Printer,
   Calendar as CalendarIcon,
-  ChevronLeft
+  ChevronLeft,
+  MessageCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  user_id: string | null;
   customer_name: string;
   customer_phone: string;
   customer_address: string | null;
@@ -307,7 +309,31 @@ const OrdersTab = () => {
           handlePrint(order);
         }
       }
+
+      // Clear chat messages when order is delivered
+      if (newStatus === 'delivered') {
+        const order = orders.find(o => o.id === orderId) || historyOrders.find(o => o.id === orderId);
+        if (order?.user_id) {
+          await supabase
+            .from('chat_messages')
+            .delete()
+            .eq('sender_id', order.user_id);
+          // Also delete admin replies to this customer
+          await supabase
+            .from('chat_messages')
+            .delete()
+            .eq('order_id', orderId);
+        }
+      }
     }
+  };
+
+  const openWhatsApp = (phone: string, customerName: string) => {
+    // Clean phone number
+    let cleanPhone = phone.replace(/\D/g, '');
+    if (!cleanPhone.startsWith('55')) cleanPhone = '55' + cleanPhone;
+    const message = encodeURIComponent(`Olá ${customerName}! Aqui é da Del Capo Pizzaria 🍕`);
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
   };
 
   const handlePrint = (order: Order) => {
@@ -760,6 +786,16 @@ const OrdersTab = () => {
                           Cancelar Pedido
                         </Button>
                       )}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                        onClick={() => openWhatsApp(order.customer_phone, order.customer_name)}
+                      >
+                        <MessageCircle className="w-4 h-4 text-green-600" />
+                        Contatar Cliente
+                      </Button>
                     </div>
                   </motion.div>
                 );

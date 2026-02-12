@@ -443,19 +443,6 @@ const Checkout = () => {
               <p className="text-xs text-muted-foreground">Edite se necessário</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address-info" className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Endereço Cadastrado
-              </Label>
-              <Textarea
-                id="address-info"
-                value={customerAddress}
-                onChange={(e) => setCustomerAddress(e.target.value)}
-                placeholder="Rua, número, bairro, complemento..."
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">Edite se necessário</p>
-            </div>
           </motion.section>
 
           {/* Delivery Type */}
