@@ -59,7 +59,9 @@ const Checkout = () => {
   // Form state
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerStreet, setCustomerStreet] = useState('');
+  const [customerNumber, setCustomerNumber] = useState('');
+  const [customerComplement, setCustomerComplement] = useState('');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [notes, setNotes] = useState('');
@@ -163,7 +165,6 @@ const Checkout = () => {
           // Only set if not already set (avoid overwriting user edits)
           if (!customerName) setCustomerName(data.name || '');
           if (!customerPhone) setCustomerPhone(data.phone || '');
-          if (!customerAddress) setCustomerAddress(data.address || '');
         }
       } catch (err) {
         console.error('Profile fetch error:', err);
@@ -208,8 +209,12 @@ const Checkout = () => {
       return;
     }
 
-    if (deliveryType === 'delivery' && !customerAddress) {
-      toast.error('Preencha o endereço de entrega');
+    if (deliveryType === 'delivery' && !customerStreet) {
+      toast.error('Preencha a rua de entrega');
+      return;
+    }
+    if (deliveryType === 'delivery' && !customerNumber) {
+      toast.error('Preencha o número');
       return;
     }
 
@@ -245,7 +250,7 @@ const Checkout = () => {
           user_id: user.id,
           customer_name: customerName,
           customer_phone: customerPhone,
-          customer_address: deliveryType === 'delivery' ? customerAddress : null,
+          customer_address: deliveryType === 'delivery' ? `${customerStreet}, ${customerNumber}${customerComplement ? ' - ' + customerComplement : ''}` : null,
           subtotal: total,
           delivery_fee: deliveryFee,
           discount_amount: discountAmount,
@@ -296,38 +301,10 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      // 4. Try to create payment with Mercado Pago
-      try {
-        const response = await supabase.functions.invoke('create-payment', {
-          body: {
-            orderId: order.id,
-            amount: finalTotal,
-            customerEmail: user.email,
-            customerName: customerName,
-            description: `Pedido Del Capo Pizzaria - ${items.length} item(s)`,
-            paymentMethod: paymentMethod,
-          },
-        });
-
-        if (response.error || !response.data?.initPoint) {
-          // Payment creation failed, but order was created
-          console.error('Payment error:', response.error);
-          clearCart();
-          toast.success('Pedido enviado! Pagamento será combinado via WhatsApp.');
-          navigate(`/pedido-confirmado?order_id=${order.id}`);
-          return;
-        }
-
-        const { initPoint } = response.data;
-        clearCart();
-        window.location.href = initPoint;
-      } catch (paymentError) {
-        // Payment failed but order was created successfully
-        console.error('Payment error:', paymentError);
-        clearCart();
-        toast.success('Pedido enviado! Pagamento será combinado via WhatsApp.');
-        navigate(`/pedido-confirmado?order_id=${order.id}`);
-      }
+      // 4. Order created successfully - redirect to confirmation
+      clearCart();
+      toast.success('Pedido enviado com sucesso!');
+      navigate(`/pedido-confirmado?order_id=${order.id}`);
 
     } catch (error) {
       console.error('Error creating order:', error);
@@ -485,18 +462,35 @@ const Checkout = () => {
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="space-y-2"
+                className="space-y-3"
               >
-                <Label htmlFor="address" className="flex items-center gap-2">
+                <Label className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" /> Endereço de entrega
                 </Label>
-                <Textarea
-                  id="address"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="Rua, número, bairro, complemento..."
+                <Input
+                  id="street"
+                  value={customerStreet}
+                  onChange={(e) => setCustomerStreet(e.target.value)}
+                  placeholder="Rua / Avenida"
                   required
                 />
+                <div className="flex gap-3">
+                  <Input
+                    id="number"
+                    value={customerNumber}
+                    onChange={(e) => setCustomerNumber(e.target.value)}
+                    placeholder="Número"
+                    required
+                    className="w-28"
+                  />
+                  <Input
+                    id="complement"
+                    value={customerComplement}
+                    onChange={(e) => setCustomerComplement(e.target.value)}
+                    placeholder="Complemento (opcional)"
+                    className="flex-1"
+                  />
+                </div>
               </motion.div>
             )}
           </motion.section>
@@ -510,6 +504,12 @@ const Checkout = () => {
           >
             <h2 className="font-semibold text-lg">Forma de Pagamento</h2>
             
+            <div className="p-3 rounded-lg bg-muted/50 border border-border">
+              <p className="text-sm text-muted-foreground">
+                💳 Pagamento no cartão de crédito e débito <strong>somente na entrega</strong>. Não trabalhamos com pagamento pelo app.
+              </p>
+            </div>
+
             <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
               <div className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:border-primary/50 transition-colors">
                 <RadioGroupItem value="pix" id="pix" />
@@ -527,7 +527,7 @@ const Checkout = () => {
                   <CreditCard className="w-5 h-5 text-primary" />
                   <div>
                     <p className="font-medium">Cartão de Crédito</p>
-                    <p className="text-xs text-muted-foreground">Parcele em até 12x</p>
+                    <p className="text-xs text-muted-foreground">Na entrega</p>
                   </div>
                 </Label>
               </div>
@@ -537,7 +537,7 @@ const Checkout = () => {
                   <CreditCard className="w-5 h-5 text-secondary" />
                   <div>
                     <p className="font-medium">Cartão de Débito</p>
-                    <p className="text-xs text-muted-foreground">Débito na hora</p>
+                    <p className="text-xs text-muted-foreground">Na entrega</p>
                   </div>
                 </Label>
               </div>
@@ -655,7 +655,7 @@ const Checkout = () => {
                 </>
               ) : (
                 <>
-                  Pagar R$ {finalTotal.toFixed(2)}
+                  Enviar Pedido — R$ {finalTotal.toFixed(2)}
                 </>
               )}
             </Button>
