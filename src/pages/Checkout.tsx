@@ -493,6 +493,20 @@ const Checkout = () => {
                 </div>
               </motion.div>
             )}
+
+            {deliveryType === 'pickup' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-3 rounded-lg bg-muted/50 border border-border"
+              >
+                <Label className="flex items-center gap-2 mb-1">
+                  <Store className="w-4 h-4" /> Endereço para retirada
+                </Label>
+                <p className="text-sm font-medium">Rua Marechal Rondon, 1045 - Centro</p>
+                <p className="text-xs text-muted-foreground">Ji-Paraná - RO</p>
+              </motion.div>
+            )}
           </motion.section>
 
           {/* Payment Method */}
@@ -542,6 +556,28 @@ const Checkout = () => {
                 </Label>
               </div>
             </RadioGroup>
+
+            {paymentMethod === 'pix' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 rounded-lg bg-muted/50 border border-border space-y-2"
+              >
+                <p className="text-sm font-semibold">Chave PIX (CPF):</p>
+                <p className="text-lg font-mono font-bold text-primary select-all">038.490.122-04</p>
+                <p className="text-sm text-muted-foreground">
+                  Após o pagamento, envie o comprovante no WhatsApp da pizzaria:
+                </p>
+                <a
+                  href="https://wa.me/5569992517150?text=Segue%20o%20comprovante%20do%20PIX"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-green-600 hover:underline"
+                >
+                  📱 (69) 9 9251-7150
+                </a>
+              </motion.div>
+            )}
           </motion.section>
 
           {/* Coupons Section */}
