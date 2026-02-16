@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { playOrderNotification } from '@/lib/sounds';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Clock, 
@@ -103,7 +104,6 @@ const OrdersTab = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showHistory, setShowHistory] = useState(false);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({ delivery_time_minutes: 45, pickup_time_minutes: 20 });
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const pendingOrdersRef = useRef<Set<string>>(new Set());
   const notificationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -121,10 +121,7 @@ const OrdersTab = () => {
 
   // Play notification sound
   const playNotification = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
+    playOrderNotification();
   };
 
   // Setup repeating notification for pending orders
@@ -161,9 +158,6 @@ const OrdersTab = () => {
   }, [orders]);
 
   useEffect(() => {
-    // Preload notification sound
-    audioRef.current = new Audio('/notification.mp3');
-    audioRef.current.load();
 
     const fetchStoreSettings = async () => {
       const { data, error } = await supabase

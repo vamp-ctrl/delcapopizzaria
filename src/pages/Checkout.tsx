@@ -503,8 +503,8 @@ const Checkout = () => {
                 <Label className="flex items-center gap-2 mb-1">
                   <Store className="w-4 h-4" /> Endereço para retirada
                 </Label>
-                <p className="text-sm font-medium">Rua Marechal Rondon, 1045 - Centro</p>
-                <p className="text-xs text-muted-foreground">Ji-Paraná - RO</p>
+                <p className="text-sm font-medium">Av. Curitiba, 3482 - Jardim Primavera</p>
+                <p className="text-xs text-muted-foreground">Vilhena - RO</p>
               </motion.div>
             )}
           </motion.section>
@@ -564,7 +564,21 @@ const Checkout = () => {
                 className="p-4 rounded-lg bg-muted/50 border border-border space-y-2"
               >
                 <p className="text-sm font-semibold">Chave PIX (CPF):</p>
-                <p className="text-lg font-mono font-bold text-primary select-all">038.490.122-04</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-lg font-mono font-bold text-primary select-all">038.490.122-04</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText('038.490.122-04');
+                      toast.success('Chave PIX copiada!');
+                    }}
+                    className="h-8 px-2 text-xs"
+                  >
+                    Copiar
+                  </Button>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Após o pagamento, envie o comprovante no WhatsApp da pizzaria:
                 </p>

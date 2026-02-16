@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Store, Power, Clock, Calendar, Truck, Package, DollarSign } from 'lucide-react';
+import { playStoreOpenSound, playStoreCloseSound } from '@/lib/sounds';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -82,8 +83,14 @@ const StoreSettingsTab = () => {
 
   const toggleStoreStatus = () => {
     if (!settings) return;
+    const newIsOpen = !settings.is_open;
+    if (newIsOpen) {
+      playStoreOpenSound();
+    } else {
+      playStoreCloseSound();
+    }
     updateSettings({
-      is_open: !settings.is_open,
+      is_open: newIsOpen,
       manual_override: true,
     });
   };
