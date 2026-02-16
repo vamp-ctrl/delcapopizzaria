@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { playOrderNotification } from '@/lib/sounds';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Send, User, Store, CheckCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,21 +36,13 @@ const ChatTab = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Play notification sound for new messages
   const playNotification = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
+    playOrderNotification();
   };
 
   useEffect(() => {
-    // Preload notification sound
-    audioRef.current = new Audio('/notification.mp3');
-    audioRef.current.load();
-    
     fetchMessages();
 
     // Subscribe to realtime messages
